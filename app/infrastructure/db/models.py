@@ -16,9 +16,15 @@ class OrderModel(Base):
     user_id: Mapped[str] = mapped_column(String(255), nullable=False)
     item_id: Mapped[UUID] = mapped_column(nullable=False)
     quantity: Mapped[int] = mapped_column(nullable=False)
-    status: Mapped[OrderStatus] = mapped_column(String(50), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    status: Mapped[OrderStatus] = mapped_column(
+        String(50), nullable=False, default=OrderStatus.NEW
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.now()
+    )
 
 
 class OutboxStatus(StrEnum):
