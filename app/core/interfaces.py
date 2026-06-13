@@ -45,7 +45,7 @@ class OutboxRepository(ABC):
 
 class InboxRepository(ABC):
     class CreateDTO(BaseModel):
-        idempotency_key: UUID
+        idempotency_key: str
         payload: dict[str, Any]
         result: dict[str, Any]
 
