@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID, JSON, ENUM
+from sqlalchemy.dialects.postgresql import UUID, JSON
 
 # revision identifiers, used by Alembic.
 revision: str = 'c51ea43cceb5'
@@ -29,46 +29,48 @@ def upgrade() -> None:
         END $$;
     """)
 
-
-    op.create_table(
-        'inbox',
-        sa.Column('idempotency_key', sa.String(255), nullable=False),
-        sa.Column('status', ENUM('PENDING', 'PROCESSED', name='inboxstatus', create_type=False), nullable=False),
-        sa.Column('payload', JSON(), nullable=False),
-        sa.Column('result', JSON(), nullable=False),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
-        sa.PrimaryKeyConstraint('idempotency_key')
-    )
-
-
-    op.create_table(
-        'orders',
-        sa.Column('id', UUID(as_uuid=True), nullable=False),
-        sa.Column('user_id', sa.String(255), nullable=False),
-        sa.Column('item_id', UUID(as_uuid=True), nullable=False),
-        sa.Column('quantity', sa.Integer(), nullable=False),
-        sa.Column('status', sa.String(50), nullable=False),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), nullable=False),
-        sa.PrimaryKeyConstraint('id')
-    )
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS inbox (
+            idempotency_key VARCHAR(255) NOT NULL,
+            status inboxstatus NOT NULL,
+            payload JSON NOT NULL,
+            result JSON NOT NULL,
+            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+            PRIMARY KEY (idempotency_key)
+        );
+    """)
 
 
-    op.create_table(
-        'outbox',
-        sa.Column('id', UUID(as_uuid=True), nullable=False),
-        sa.Column('event_type', sa.String(100), nullable=False),
-        sa.Column('payload', JSON(), nullable=False),
-        sa.Column('status', sa.String(20), nullable=False),
-        sa.Column('created_at', sa.DateTime(), nullable=False),
-        sa.Column('sent_at', sa.DateTime(), nullable=True),
-        sa.PrimaryKeyConstraint('id')
-    )
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS orders (
+            id UUID NOT NULL,
+            user_id VARCHAR(255) NOT NULL,
+            item_id UUID NOT NULL,
+            quantity INTEGER NOT NULL,
+            status VARCHAR(50) NOT NULL,
+            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+            updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+            PRIMARY KEY (id)
+        );
+    """)
+
+
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS outbox (
+            id UUID NOT NULL,
+            event_type VARCHAR(100) NOT NULL,
+            payload JSON NOT NULL,
+            status VARCHAR(20) NOT NULL,
+            created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+            sent_at TIMESTAMP WITHOUT TIME ZONE,
+            PRIMARY KEY (id)
+        );
+    """)
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_table('outbox')
-    op.drop_table('orders')
-    op.drop_table('inbox')
+    op.execute("DROP TABLE IF EXISTS outbox CASCADE")
+    op.execute("DROP TABLE IF EXISTS orders CASCADE")
+    op.execute("DROP TABLE IF EXISTS inbox CASCADE")
     op.execute("DROP TYPE IF EXISTS inboxstatus CASCADE")
