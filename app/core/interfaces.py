@@ -30,6 +30,10 @@ class OutboxRepository(ABC):
     def get_records(self):
         pass
 
+    @abstractmethod
+    def set_sent_status(self):
+        pass
+
 
 class UnitOfWorkBase(ABC):
     @abstractmethod
