@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Self
+from typing import Any, Self
 from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.core.schemas import Order, Outbox, OutboxStatus
+from app.core.schemas import InboxEvent, Order, Outbox, OutboxStatus
 
 
 class OrderRepository(ABC):
@@ -15,11 +15,11 @@ class OrderRepository(ABC):
         quantity: int
 
     @abstractmethod
-    def create(self, order: CreateDTO) -> None:
+    async def create(self, order: CreateDTO) -> Order:
         pass
 
     @abstractmethod
-    def get_by_id(self, order_id: str) -> Order | None:
+    async def get_by_id(self, order_id: str) -> Order | None:
         pass
 
 
@@ -31,7 +31,7 @@ class OutboxRepository(ABC):
         created_at: datetime
 
     @abstractmethod
-    async def create_outbox(self, outbox: CreateDTO):
+    async def create_outbox(self, outbox: CreateDTO) -> Outbox:
         pass
 
     @abstractmethod
@@ -40,6 +40,31 @@ class OutboxRepository(ABC):
 
     @abstractmethod
     async def set_sent_status(self, ids: list[UUID]) -> None:
+        pass
+
+
+class InboxRepository(ABC):
+    class CreateDTO(BaseModel):
+        idempotency_key: UUID
+        payload: dict[str, Any]
+        result: dict[str, Any]
+
+    @abstractmethod
+    async def get_by_idempotency_key(self, key: UUID) -> InboxEvent | None:
+        pass
+
+    @abstractmethod
+    async def get_pending(self, limit: int = 100) -> list[InboxEvent]:
+        pass
+
+    @abstractmethod
+    async def save(self, dto: CreateDTO) -> None:
+        pass
+
+    @abstractmethod
+    async def check_idempotency(
+        self, key: UUID, payload: dict[str, Any]
+    ) -> None:
         pass
 
 
@@ -68,3 +93,4 @@ class UnitOfWorkBase(ABC):
 class UnitOfWork(UnitOfWorkBase):
     outbox_repo: OutboxRepository
     order_repo: OrderRepository
+    inbox_repo: InboxRepository
