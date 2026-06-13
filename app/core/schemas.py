@@ -34,7 +34,7 @@ class CreateOrderRequest(BaseModel):
     user_id: str
     item_id: UUID
     quantity: int
-    idempotency_key: UUID
+    idempotency_key: str | UUID
 
 
 class Order(BaseModel):
@@ -75,7 +75,7 @@ class Outbox(BaseModel):
 
 
 class InboxEvent(BaseModel):
-    idempotency_key: UUID
+    idempotency_key: UUID | str
     status: InboxStatus
     payload: dict[str, Any]
     result: dict[str, Any]
