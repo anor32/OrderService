@@ -1,5 +1,5 @@
 from app.core.interfaces import UnitOfWork
-from app.core.schemas import CreateOrderRequest, Order
+from app.core.schemas import CreateOrderRequest, Order, Outbox
 
 
 class OrderService:
@@ -12,15 +12,23 @@ class OrderService:
         )
         if inbox:
             await self.uow.inbox_repo.check_idempotency(
-                key=inbox.idempotency_key, payload=order.model_dump()
+                key=inbox.idempotency_key,
+                payload=order.model_dump(mode="json"),
             )
+        ord = Order(**order.model_dump())
         dto = self.uow.order_repo.CreateDTO(
-            user_id=order.user_id,
-            item_id=order.item_id,
-            quantity=order.quantity,
+            user_id=ord.user_id,
+            item_id=ord.item_id,
+            quantity=ord.quantity,
+        )
+        out = Outbox(
+            event_type="create_order", payload=ord.model_dump(mode="json")
         )
         outbox_dto = self.uow.outbox_repo.CreateDTO(
-            event_type="create_order", payload=dto.model_dump()
+            event_type=out.event_type,
+            payload=out.payload,
+            status=out.status,
+            created_at=out.created_at,
         )
         try:
             async with self.uow as u:
@@ -28,8 +36,8 @@ class OrderService:
                 await u.outbox_repo.create_outbox(outbox_dto)
                 inbox_dto = u.inbox_repo.CreateDTO(
                     idempotency_key=order.idempotency_key,
-                    payload=order.model_dump(),
-                    result=result.model_dump(),
+                    payload=order.model_dump(mode="json"),
+                    result=result.model_dump(mode="json"),
                 )
                 await u.inbox_repo.save(inbox_dto)
         except Exception as e:
