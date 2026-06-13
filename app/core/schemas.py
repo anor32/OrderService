@@ -3,7 +3,12 @@ from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class OutboxStatus(StrEnum):
+    PENDING = "pending"
+    SENT = "sent"
 
 
 class OrderStatus(StrEnum):
@@ -11,6 +16,11 @@ class OrderStatus(StrEnum):
     PAID = "PAID"
     SHIPPED = "SHIPPED"
     CANCELLED = "CANCELLED"
+
+
+class PaymentStatus(StrEnum):
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
 
 
 class CreateOrderRequest(BaseModel):
@@ -40,14 +50,18 @@ class OrderResponse(BaseModel):
     updated_at: datetime
 
 
-class PaymentStatus(StrEnum):
-    SUCCEEDED = "succeeded"
-    FAILED = "failed"
-
-
 class PaymentRequest(BaseModel):
     payment_id: UUID
     order_id: UUID
     status: PaymentStatus
     amount: Decimal
     error_message: str | None
+
+
+class Outbox(BaseModel):
+    id: UUID
+    event_type: str
+    status: OutboxStatus = Field(default=OutboxStatus.PENDING)
+    payload: dict
+    created_at: datetime = Field(default_factory=datetime.now)
+    sent_at: datetime | None = None
