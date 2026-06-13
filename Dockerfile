@@ -14,6 +14,6 @@ USER appuser
 
 
 
-CMD bash -c "python -m app.commands.manage_db -op create && \
+CMD bash -c "python -m app.infrastructure.commands.manage_db  -op create && \
 alembic upgrade head && \
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
