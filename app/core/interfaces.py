@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -30,21 +31,21 @@ class OutboxRepository(ABC):
         created_at: datetime
 
     @abstractmethod
-    def create_outbox(self, outbox: CreateDTO):
+    async def create_outbox(self, outbox: CreateDTO):
         pass
 
     @abstractmethod
-    def get_records(self) -> list[Outbox]:
+    async def get_records(self) -> list[Outbox]:
         pass
 
     @abstractmethod
-    def set_sent_status(self, ids: list[UUID]) -> None:
+    async def set_sent_status(self, ids: list[UUID]) -> None:
         pass
 
 
 class UnitOfWorkBase(ABC):
     @abstractmethod
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         pass
 
     @abstractmethod
