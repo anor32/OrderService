@@ -49,19 +49,21 @@ class OutboxRepositoryImpl(OutboxRepository):
         records = await (
             self._session.scalars(OutboxModel)
             .where(OutboxModel.status == OutboxStatus.PENDING)
+            .limit(100)
+            .with_for_update(skip_locked=True)
             .all()
         )
         records = [self._construct(record) for record in records]
 
         return records
 
-    def set_sent_status(self, ids: list[UUID]):
+    async def set_sent_status(self, ids: list[UUID]):
         stmt = (
             update(OutboxModel)
             .where(OutboxModel.id.in_(ids))
             .values(status=OutboxStatus.SENT, sent_at=datetime.now())
         )
-        self._session.execute(stmt)
+        await self._session.execute(stmt)
 
     def _construct(self, model: OutboxModel) -> Outbox:
         outbox = Outbox(
