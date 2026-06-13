@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Response
 
 from app.core.schemas import CreateOrderRequest, OrderResponse, PaymentRequest
+from app.presentation.dependecies import DepOrderService
 
 router = APIRouter()
 
@@ -11,8 +12,12 @@ async def health():
 
 
 @router.post("/api/orders", status_code=201)
-def create_order(data: CreateOrderRequest) -> OrderResponse:
-    pass
+async def create_order(
+    request_data: CreateOrderRequest, service: DepOrderService
+) -> OrderResponse:
+    order = await service.create_order(request_data)
+    resp = OrderResponse(**order.model_dump())
+    return resp
 
 
 @router.get("/api/orders/{order_id}", status_code=200)
