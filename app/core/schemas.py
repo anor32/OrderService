@@ -34,7 +34,7 @@ class CreateOrderRequest(BaseModel):
     user_id: str
     item_id: UUID
     quantity: int
-    idempotency_key: str | UUID
+    idempotency_key: str
 
 
 class Order(BaseModel):

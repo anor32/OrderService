@@ -42,8 +42,9 @@ class OutboxModel(Base):
 
 class InboxModel(Base):
     __tablename__ = "inbox"
-    idempotency_key: Mapped[UUID] = mapped_column(
-        primary_key=True, default=uuid4
+    idempotency_key: Mapped[str] = mapped_column(
+        primary_key=True,
+        unique=True,
     )
     status: Mapped[InboxStatus] = mapped_column(
         default=InboxStatus.PENDING, nullable=False
