@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from db_config import AsyncSession
 from sqlalchemy import select, update
 
 from app.core.exceptions import IdempotencyError, ObjectNotFound
@@ -12,6 +11,7 @@ from app.core.interfaces import (
     OutboxRepository,
 )
 from app.core.schemas import InboxEvent, InboxStatus, Order, Outbox
+from app.infrastructure.db.db_config import AsyncSession
 from app.infrastructure.db.models import (
     InboxModel,
     OrderModel,
@@ -24,9 +24,11 @@ class OrderRepositoryImpl(OrderRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def create(self, data: OrderRepository.CreateDTO):
+    async def create(self, data: OrderRepository.CreateDTO) -> Order:
         order = OrderModel(**data.model_dump())
-        await self._session.add(order)
+        self._session.add(order)
+        await self._session.flush()
+        return await self._construct(order)
 
     async def get_by_id(self, order_id: str) -> Order | None:
         stmt = select(OrderModel).where(OrderModel.id == order_id).limit(1)
@@ -41,9 +43,13 @@ class OrderRepositoryImpl(OrderRepository):
         order = Order(
             id=model.id,
             user_id=model.user_id,
-            amount=float(model.amount),
+            item_id=model.item_id,
+            quantity=model.quantity,
             status=model.status,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
         )
+
         return order
 
 
@@ -51,9 +57,13 @@ class OutboxRepositoryImpl(OutboxRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def create_outbox(self, outbox: OutboxRepository.CreateDTO):
+    async def create_outbox(
+        self, outbox: OutboxRepository.CreateDTO
+    ) -> Outbox:
         out = OutboxModel(**outbox.model_dump())
-        await self._session.add(out)
+        self._session.add(out)
+        await self._session.flush()
+        return await self._construct(out)
 
     async def get_records(self) -> list[Outbox]:
         records = await (
@@ -63,7 +73,7 @@ class OutboxRepositoryImpl(OutboxRepository):
             .with_for_update(skip_locked=True)
             .all()
         )
-        records = [self._construct(record) for record in records]
+        records = [await self._construct(record) for record in records]
 
         return records
 
@@ -75,7 +85,7 @@ class OutboxRepositoryImpl(OutboxRepository):
         )
         await self._session.execute(stmt)
 
-    def _construct(self, model: OutboxModel) -> Outbox:
+    async def _construct(self, model: OutboxModel) -> Outbox:
         outbox = Outbox(
             status=model.status,
             event_type=model.event_type,
@@ -127,6 +137,7 @@ class InboxRepositoryImpl(InboxRepository):
             status=InboxStatus.PENDING,
         )
         self._session.add(model)
+        await self._session.flush()
 
     async def check_idempotency(
         self, key: UUID, payload: dict[str, Any]
