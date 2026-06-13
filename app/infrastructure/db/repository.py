@@ -1,17 +1,27 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
-from db_config import Session
+from db_config import AsyncSession
 from sqlalchemy import select, update
 
-from app.core.exceptions import ObjectNotFound
-from app.core.interfaces import OrderRepository, OutboxRepository
-from app.core.schemas import Order, Outbox
-from app.infrastructure.db.models import OrderModel, OutboxModel, OutboxStatus
+from app.core.exceptions import IdempotencyError, ObjectNotFound
+from app.core.interfaces import (
+    InboxRepository,
+    OrderRepository,
+    OutboxRepository,
+)
+from app.core.schemas import InboxEvent, InboxStatus, Order, Outbox
+from app.infrastructure.db.models import (
+    InboxModel,
+    OrderModel,
+    OutboxModel,
+    OutboxStatus,
+)
 
 
 class OrderRepositoryImpl(OrderRepository):
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self._session = session
 
     async def create(self, data: OrderRepository.CreateDTO):
@@ -38,7 +48,7 @@ class OrderRepositoryImpl(OrderRepository):
 
 
 class OutboxRepositoryImpl(OutboxRepository):
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self._session = session
 
     async def create_outbox(self, outbox: OutboxRepository.CreateDTO):
@@ -75,3 +85,64 @@ class OutboxRepositoryImpl(OutboxRepository):
         )
 
         return outbox
+
+
+class InboxRepositoryImpl(InboxRepository):
+    def __init__(self, session: AsyncSession):
+        self._session = session
+
+    async def get_by_idempotency_key(self, key: UUID) -> InboxEvent | None:
+        stmt = select(InboxModel).where(InboxModel.idempotency_key == key)
+        result = await self._session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if model is None:
+            return None
+        return self._to_entity(model)
+
+    async def get_pending(self, limit: int = 100) -> list[InboxEvent]:
+        stmt = (
+            select(InboxModel)
+            .where(InboxModel.status == InboxStatus.PENDING)
+            .limit(limit)
+        )
+        result = await self._session.execute(stmt)
+        models = result.scalars().all()
+        return [self._to_entity(model) for model in models]
+
+    async def save(self, dto: InboxRepository.CreateDTO) -> None:
+        existing = await self.get_by_idempotency_key(dto.idempotency_key)
+
+        if existing:
+            if existing.payload != dto.payload:
+                raise IdempotencyError(
+                    f"Payload mismatch for idempotency_key "
+                    f"{dto.idempotency_key}"
+                )
+            return
+
+        model = InboxModel(
+            idempotency_key=dto.idempotency_key,
+            payload=dto.payload,
+            result=dto.result,
+            status=InboxStatus.PENDING,
+        )
+        self._session.add(model)
+
+    async def check_idempotency(
+        self, key: UUID, payload: dict[str, Any]
+    ) -> None:
+        existing = await self.get_by_idempotency_key(key)
+        if existing and existing.payload != payload:
+            raise IdempotencyError(
+                f"Idempotency violation: payload mismatch for key {key}"
+            )
+
+    def _to_entity(self, model: InboxModel) -> InboxEvent:
+        return InboxEvent(
+            idempotency_key=model.idempotency_key,
+            status=model.status,
+            payload=model.payload,
+            result=model.result,
+            created_at=model.created_at,
+            processed_at=model.processed_at,
+        )

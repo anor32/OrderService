@@ -1,6 +1,11 @@
 from typing import Self
 
-from app.core.interfaces import OrderRepository, OutboxRepository, UnitOfWork
+from app.core.interfaces import (
+    InboxRepository,
+    OrderRepository,
+    OutboxRepository,
+    UnitOfWork,
+)
 
 
 class UnitOfWorkOrders(UnitOfWork):
@@ -9,10 +14,12 @@ class UnitOfWorkOrders(UnitOfWork):
         session,
         order_repo: OrderRepository,
         outbox_repo: OutboxRepository,
+        inbox_repo: InboxRepository,
     ):
         self._session = session
         self.order_repo = order_repo
         self.outbox_repo = outbox_repo
+        self.inbox_repo = inbox_repo
 
     async def __aenter__(self) -> Self:
         return self

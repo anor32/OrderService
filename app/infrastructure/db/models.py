@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import JSON, UUID, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.schemas import OrderStatus, OutboxStatus
+from app.core.schemas import InboxStatus, OrderStatus, OutboxStatus
 from app.infrastructure.db.db_config import Base
 
 
@@ -48,6 +48,9 @@ class InboxModel(Base):
     __tablename__ = "inbox"
     idempotency_key: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True
+    )
+    status: Mapped[InboxStatus] = mapped_column(
+        default=InboxStatus.PENDING, nullable=False
     )
     payload: Mapped[dict] = mapped_column(JSON, nullable=False)
     result: Mapped[dict] = mapped_column(JSON, nullable=False)

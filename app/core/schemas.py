@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -9,6 +10,11 @@ from pydantic import BaseModel, Field
 class OutboxStatus(StrEnum):
     PENDING = "pending"
     SENT = "sent"
+
+
+class InboxStatus(StrEnum):
+    PENDING = "pending"
+    PROCESSED = "processed"
 
 
 class OrderStatus(StrEnum):
@@ -65,3 +71,12 @@ class Outbox(BaseModel):
     payload: dict
     created_at: datetime = Field(default_factory=datetime.now)
     sent_at: datetime | None = None
+
+
+class InboxEvent(BaseModel):
+    idempotency_key: UUID
+    status: InboxStatus
+    payload: dict[str, Any]
+    result: dict[str, Any]
+    created_at: datetime | None = None
+    processed_at: datetime | None = None
