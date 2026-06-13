@@ -1,11 +1,10 @@
 import uuid
 from datetime import datetime
-from enum import StrEnum
 
-from sqlalchemy import JSON, UUID, DateTime, String, func
+from sqlalchemy import JSON, UUID, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.schemas import OrderStatus
+from app.core.schemas import OrderStatus, OutboxStatus
 from app.infrastructure.db.db_config import Base
 
 
@@ -27,12 +26,7 @@ class OrderModel(Base):
     )
 
 
-class OutboxStatus(StrEnum):
-    PENDING = "pending"
-    SENT = "sent"
-
-
-class Outbox(Base):
+class OutboxModel(Base):
     __tablename__ = "outbox"
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True
@@ -45,12 +39,12 @@ class Outbox(Base):
         nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), nullable=False
+        DateTime, default=datetime.now(), nullable=False
     )
     sent_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
 
-class Inbox(Base):
+class InboxModel(Base):
     __tablename__ = "inbox"
     idempotency_key: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True
