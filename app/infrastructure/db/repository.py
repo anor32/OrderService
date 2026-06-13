@@ -101,7 +101,7 @@ class InboxRepositoryImpl(InboxRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def get_by_idempotency_key(self, key: UUID) -> InboxEvent | None:
+    async def get_by_idempotency_key(self, key: str) -> InboxEvent | None:
         stmt = select(InboxModel).where(InboxModel.idempotency_key == key)
         result = await self._session.execute(stmt)
         model = result.scalar_one_or_none()

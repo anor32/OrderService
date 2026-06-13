@@ -15,6 +15,7 @@ class OrderService:
                 key=inbox.idempotency_key,
                 payload=order.model_dump(mode="json"),
             )
+            return Order(**inbox.result)
         ord = Order(**order.model_dump())
         dto = self.uow.order_repo.CreateDTO(
             user_id=ord.user_id,

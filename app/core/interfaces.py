@@ -50,7 +50,7 @@ class InboxRepository(ABC):
         result: dict[str, Any]
 
     @abstractmethod
-    async def get_by_idempotency_key(self, key: UUID) -> InboxEvent | None:
+    async def get_by_idempotency_key(self, key: str) -> InboxEvent | None:
         pass
 
     @abstractmethod
