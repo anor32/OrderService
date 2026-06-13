@@ -1,17 +1,34 @@
-from app.core.interfaces import OrderRepository
+from typing import Self
+
+from app.core.interfaces import OrderRepository, OutboxRepository, UnitOfWork
 
 
-class UnitOfWork:
-    def __init__(self, session, db: OrderRepository):
-        self.session = session
-        self.db = db
+class UnitOfWorkOrders(UnitOfWork):
+    def __init__(
+        self,
+        session,
+        order_repo: OrderRepository,
+        outbox_repo: OutboxRepository,
+    ):
+        self._session = session
+        self.order_repo = order_repo
+        self.outbox_repo = outbox_repo
 
-    def __enter__(self):
-        return self.db
+    async def __aenter__(self) -> Self:
+        return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:
-            self.session.commit()
+            await self.commit()
         else:
-            self.session.rollback()
-        self.session.close()
+            await self.rollback()
+        await self.close()
+
+    async def commit(self):
+        await self._session.commit()
+
+    async def close(self):
+        await self._session.close()
+
+    async def rollback(self):
+        await self._session.rollback()
