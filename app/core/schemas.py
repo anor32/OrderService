@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -37,13 +38,13 @@ class CreateOrderRequest(BaseModel):
 
 
 class Order(BaseModel):
-    id: UUID
+    id: UUID = Field(default_factory=uuid.uuid4)
     user_id: str
     item_id: UUID
     quantity: int
-    status: OrderStatus
-    created_at: datetime
-    updated_at: datetime
+    status: OrderStatus = Field(default=OrderStatus.NEW)
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime | None = None
 
 
 class OrderResponse(BaseModel):
@@ -65,7 +66,7 @@ class PaymentRequest(BaseModel):
 
 
 class Outbox(BaseModel):
-    id: UUID
+    id: UUID = Field(default_factory=uuid.uuid4)
     event_type: str
     status: OutboxStatus = Field(default=OutboxStatus.PENDING)
     payload: dict
