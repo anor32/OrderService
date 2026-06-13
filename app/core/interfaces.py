@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.core.schemas import Order
+from app.core.schemas import Order, Outbox, OutboxStatus
 
 
 class OrderRepository(ABC):
@@ -22,16 +23,22 @@ class OrderRepository(ABC):
 
 
 class OutboxRepository(ABC):
+    class CreateDTO(BaseModel):
+        event_type: str
+        status: OutboxStatus
+        payload: dict
+        created_at: datetime
+
     @abstractmethod
-    def create_outbox(self, outbox):
+    def create_outbox(self, outbox: CreateDTO):
         pass
 
     @abstractmethod
-    def get_records(self):
+    def get_records(self) -> list[Outbox]:
         pass
 
     @abstractmethod
-    def set_sent_status(self):
+    def set_sent_status(self, ids: list[UUID]) -> None:
         pass
 
 
