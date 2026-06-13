@@ -1,8 +1,8 @@
-"""init db
+"""init_db
 
-Revision ID: fcf9f75c262e
+Revision ID: c51ea43cceb5
 Revises: 5bd6ad9cf38f
-Create Date: 2026-06-14 00:30:26.325864
+Create Date: 2026-06-14 01:06:48.796015
 
 """
 from typing import Sequence, Union
@@ -11,8 +11,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import UUID, JSON, ENUM
 
-
-revision: str = 'fcf9f75c262e'
+# revision identifiers, used by Alembic.
+revision: str = 'c51ea43cceb5'
 down_revision: Union[str, Sequence[str], None] = '5bd6ad9cf38f'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -20,6 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
+
     op.execute("""
         DO $$ BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'inboxstatus') THEN
@@ -39,6 +40,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('idempotency_key')
     )
 
+
     op.create_table(
         'orders',
         sa.Column('id', UUID(as_uuid=True), nullable=False),
@@ -50,6 +52,7 @@ def upgrade() -> None:
         sa.Column('updated_at', sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint('id')
     )
+
 
     op.create_table(
         'outbox',
@@ -68,6 +71,4 @@ def downgrade() -> None:
     op.drop_table('outbox')
     op.drop_table('orders')
     op.drop_table('inbox')
-
-
     op.execute("DROP TYPE IF EXISTS inboxstatus CASCADE")
