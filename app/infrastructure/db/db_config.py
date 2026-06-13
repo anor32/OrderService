@@ -2,7 +2,8 @@ import os
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.orm import declarative_base
 
 load_dotenv()
 
@@ -37,8 +38,8 @@ def get_system_db_url() -> str:
     return SYSTEM_URL
 
 
-engine = create_engine(get_sync_db_url())
-Session = sessionmaker(bind=engine)
+engine = create_async_engine(get_async_db_url())
+AsyncSession = async_sessionmaker(bind=engine)
 
 system_engine = create_engine(
     get_system_db_url(), isolation_level="AUTOCOMMIT"
