@@ -155,5 +155,4 @@ class InboxRepositoryImpl(InboxRepository):
             payload=model.payload,
             result=model.result,
             created_at=model.created_at,
-            processed_at=model.processed_at,
         )
