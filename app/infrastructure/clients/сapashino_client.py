@@ -51,7 +51,7 @@ class CatalogServiceImpl(CapashinoClient, CatalogService):
 
 class PaymentServiceImpl(CapashinoClient, PaymentService):
     async def create_payment(self, body: CreatePaymentRequest):
-        url = build_url(base_url=self._base_url, path="/api/payments/")
+        url = build_url(base_url=self._base_url, path="/api/payments")
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url, json=body.model_dump(mode="json"), headers=self._headers
