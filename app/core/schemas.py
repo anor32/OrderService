@@ -7,6 +7,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.core.exceptions import NotEnoughStockError
+
 
 class OutboxStatus(StrEnum):
     PENDING = "pending"
@@ -81,3 +83,16 @@ class InboxEvent(BaseModel):
     result: dict[str, Any]
     created_at: datetime | None = None
     processed_at: datetime | None = None
+
+
+class CatalogResponse(BaseModel):
+    id: UUID
+    name: str
+    price: str
+    available_qty: int
+    created_at: datetime
+
+    def is_available(self, quantity: int) -> bool:
+        if self.available_qty >= quantity:
+            return True
+        raise NotEnoughStockError
