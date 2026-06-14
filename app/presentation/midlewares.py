@@ -16,10 +16,10 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
             return response
-        except (ObjectNotFound, NotEnoughStockError) as e:
+        except ObjectNotFound as e:
             api_logger.error("ошибка в эндпоинте %s %s", request.url, e)
             return JSONResponse(status_code=404, content={"detail": str(e)})
-        except (ValueError, WrongRequest) as e:
+        except (ValueError, WrongRequest, NotEnoughStockError) as e:
             api_logger.error("ошибка в эндпоинте %s %s", request.url, str(e))
             return JSONResponse(status_code=400, content={"detail": str(e)})
         except ClientServerError as e:
