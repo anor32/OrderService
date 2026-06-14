@@ -1,9 +1,8 @@
 from datetime import datetime
-from tkinter.tix import Select
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import Select, select, update
 
 from app.core.domain_exceptions import IdempotencyError, ObjectNotFound
 from app.core.interfaces import (
