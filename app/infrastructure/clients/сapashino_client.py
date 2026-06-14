@@ -56,7 +56,7 @@ class PaymentServiceImpl(CapashinoClient, PaymentService):
             response = await client.post(
                 url, json=body.model_dump(mode="json"), headers=self._headers
             )
-            api_logger(
+            api_logger.info(
                 "ответ от Payment Service с кодом %s", response.status_code
             )
             if response.is_success:
