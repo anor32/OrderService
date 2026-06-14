@@ -32,7 +32,7 @@ class OrderRepositoryImpl(OrderRepository):
 
     async def get_by_id(self, order_id: str) -> Order | None:
         stmt = select(OrderModel).where(OrderModel.id == order_id).limit(1)
-        model = self._session.scalars(stmt).first()
+        model = await self._session.scalar(stmt)
         if not model:
             raise ObjectNotFound("Объект Order не найден в базе данных")
         order = await self._construct(model)
