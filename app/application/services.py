@@ -12,6 +12,7 @@ from app.core.schemas import (
     PaymentResponse,
     PaymentStatus,
 )
+from app.presentation.logs_config import api_logger
 
 
 class OrderService:
@@ -39,7 +40,7 @@ class OrderService:
             return inbox
         store = await self.catalog.check_item(item_id=order_request.item_id)
         store.is_available(order_request.quantity)
-
+        api_logger.info("cохрание заказа  в базу")
         result = await self._transactional_save(order_request)
         payment_data = CreatePaymentRequest(
             order_id=result.id,
@@ -47,6 +48,7 @@ class OrderService:
             callback_url=CALLBACK_URL,
             idempotency_key=order_request.idempotency_key,
         )
+        api_logger.info("Отправка в payment service")
         await self.payment_service.create_payment(payment_data)
         return result
 
