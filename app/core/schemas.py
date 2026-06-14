@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.core.exceptions import NotEnoughStockError
+from app.core.domain_exceptions import NotEnoughStockError
 
 
 class OutboxStatus(StrEnum):
@@ -95,4 +95,4 @@ class CatalogResponse(BaseModel):
     def is_available(self, quantity: int) -> bool:
         if self.available_qty >= quantity:
             return True
-        raise NotEnoughStockError
+        raise NotEnoughStockError("Товара нет в наличии")

@@ -3,8 +3,8 @@ from urllib.parse import urljoin
 
 from httpx import URL, AsyncClient, Request, Response
 
-from app.core.exceptions import ObjectNotFound
-from app.infrastructure.error_handlers import ClientServerError, WrongRequest
+from app.core.domain_exceptions import ObjectNotFound
+from app.presentation.http_exceptions import ClientServerError, WrongRequest
 
 
 def build_url(base_url: str | URL, path: str) -> str:

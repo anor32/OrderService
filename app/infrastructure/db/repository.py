@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import select, update
 
-from app.core.exceptions import IdempotencyError, ObjectNotFound
+from app.core.domain_exceptions import IdempotencyError, ObjectNotFound
 from app.core.interfaces import (
     InboxRepository,
     OrderRepository,
