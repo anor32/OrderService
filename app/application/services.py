@@ -1,19 +1,22 @@
 from datetime import datetime
 
-from app.core.interfaces import UnitOfWork
+from app.core.interfaces import CatalogService, UnitOfWork
 from app.core.schemas import CreateOrderRequest, Order, OutboxStatus
 
 
 class OrderService:
-    def __init__(self, uow: UnitOfWork):
+    def __init__(self, uow: UnitOfWork, client: CatalogService):
         self.uow = uow
+        self.client = client
 
     async def create_order(self, order_request: CreateOrderRequest) -> Order:
         inbox = await self._check_idempotency(order_request)
         if inbox:
             return inbox
-
+        store = await self.client.check_item(item_id=order_request.item_id)
+        store.is_available(order_request.quantity)
         result = await self._transactional_save(order_request)
+
         return result
 
     async def _check_idempotency(
