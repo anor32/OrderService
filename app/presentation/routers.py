@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Response
+from fastapi import APIRouter
 
-from app.core.schemas import CreateOrderRequest, OrderResponse, PaymentRequest
+from app.core.schemas import CreateOrderRequest, OrderResponse, PaymentResponse
 from app.presentation.dependecies import DepOrderService
 
 router = APIRouter()
@@ -21,10 +21,12 @@ async def create_order(
 
 
 @router.get("/api/orders/{order_id}", status_code=200)
-def get_order(order_id) -> OrderResponse:
-    pass
+async def get_order(order_id, service: DepOrderService) -> OrderResponse:
+    order = await service.get_order(order_id)
+    resp = OrderResponse(**order.model_dump())
+    return resp
 
 
 @router.post("/api/orders/payment-callback", status_code=200)
-def callback_order(data: PaymentRequest):
-    return Response(status_code=200)
+def callback_order(data: PaymentResponse, service: DepOrderService):
+    service.process_payment_callback(data)
