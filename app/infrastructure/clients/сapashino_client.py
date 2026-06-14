@@ -2,9 +2,12 @@ from uuid import UUID
 
 import httpx
 
-from app.core.interfaces import CatalogService
-from app.core.schemas import CatalogResponse
-from app.infrastructure.config import CAPASHINO_HOST, EVENTS_API_KEY
+from app.core.config import CAPASHINO_HOST, EVENTS_API_KEY
+from app.core.interfaces import CatalogService, PaymentService
+from app.core.schemas import (
+    CatalogResponse,
+    CreatePaymentRequest,
+)
 from app.infrastructure.utils import build_url, retry_request
 
 
@@ -45,9 +48,12 @@ class CatalogServiceImpl(CapashinoClient, CatalogService):
         return resp
 
 
-class PaymentService(CapashinoClient):
-    async def create_payment(self, body):
+class PaymentServiceImpl(CapashinoClient, PaymentService):
+    async def create_payment(self, body: CreatePaymentRequest):
         url = build_url(base_url=self._base_url, path="/api/payments/")
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, data=body, headers=self._headers)
-        return response.json()
+            response = await client.post(
+                url, data=body.model_dump(mode="json"), headers=self._headers
+            )
+            if response.is_success:
+                await retry_request(client, response.request)
