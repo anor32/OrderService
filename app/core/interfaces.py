@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from app.core.schemas import (
     CatalogResponse,
+    CreatePaymentRequest,
     InboxEvent,
     Order,
     Outbox,
@@ -99,6 +100,12 @@ class UnitOfWorkBase(ABC):
 class CatalogService(ABC):
     @abstractmethod
     async def check_item(self, item_id: UUID) -> CatalogResponse:
+        pass
+
+
+class PaymentService(ABC):
+    @abstractmethod
+    async def create_payment(self, body: CreatePaymentRequest) -> None:
         pass
 
 

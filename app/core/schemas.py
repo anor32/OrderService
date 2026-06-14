@@ -59,8 +59,8 @@ class OrderResponse(BaseModel):
     updated_at: datetime
 
 
-class PaymentRequest(BaseModel):
-    payment_id: UUID
+class Payment(BaseModel):
+    payment_id: UUID = Field(default_factory=uuid.uuid4)
     order_id: UUID
     status: PaymentStatus
     amount: Decimal
@@ -96,3 +96,20 @@ class CatalogResponse(BaseModel):
         if self.available_qty >= quantity:
             return True
         raise NotEnoughStockError("Товара нет в наличии")
+
+
+class CreatePaymentRequest(BaseModel):
+    order_id: UUID
+    amount: Decimal
+    callback_url: str
+    idempotency_key: str
+
+
+class PaymentResponse(BaseModel):
+    id: UUID
+    user_id: UUID
+    order_id: UUID
+    amount: Decimal
+    status: str
+    idempotency_key: str
+    created_at: datetime
