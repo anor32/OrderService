@@ -1,4 +1,5 @@
 from datetime import datetime
+from tkinter.tix import Select
 from typing import Any
 from uuid import UUID
 
@@ -10,7 +11,13 @@ from app.core.interfaces import (
     OrderRepository,
     OutboxRepository,
 )
-from app.core.schemas import InboxEvent, InboxStatus, Order, Outbox
+from app.core.schemas import (
+    InboxEvent,
+    InboxStatus,
+    Order,
+    OrderStatus,
+    Outbox,
+)
 from app.infrastructure.db.db_config import AsyncSession
 from app.infrastructure.db.models import (
     InboxModel,
@@ -30,8 +37,12 @@ class OrderRepositoryImpl(OrderRepository):
         await self._session.flush()
         return await self._construct(order)
 
-    async def get_by_id(self, order_id: str) -> Order | None:
+    async def _get_query_by_id(self, order_id) -> Select:
         stmt = select(OrderModel).where(OrderModel.id == order_id).limit(1)
+        return stmt
+
+    async def get_by_id(self, order_id: str) -> Order | None:
+        stmt = await self._get_query_by_id(order_id)
         model = await self._session.scalar(stmt)
         if not model:
             raise ObjectNotFound("Объект Order не найден в базе данных")
@@ -51,6 +62,13 @@ class OrderRepositoryImpl(OrderRepository):
         )
 
         return order
+
+    async def set_order_status(self, status: OrderStatus, order_id: str):
+        stmt = await self._get_query_by_id(order_id)
+        model = await self._session.scalar(stmt)
+        if not model:
+            raise ObjectNotFound("Объект Order не найден в базе данных")
+        model.status = status
 
 
 class OutboxRepositoryImpl(OutboxRepository):

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from app.core.config import CALLBACK_URL
 from app.core.interfaces import CatalogService, PaymentService, UnitOfWork
@@ -6,7 +7,10 @@ from app.core.schemas import (
     CreateOrderRequest,
     CreatePaymentRequest,
     Order,
+    OrderStatus,
     OutboxStatus,
+    PaymentResponse,
+    PaymentStatus,
 )
 
 
@@ -27,7 +31,10 @@ class OrderService:
             return order
 
     async def create_order(self, order_request: CreateOrderRequest) -> Order:
-        inbox = await self._check_idempotency(order_request)
+        inbox = await self._check_idempotency(
+            key=order_request.idempotency_key,
+            payload=order_request.model_dump(mode="json"),
+        )
         if inbox:
             return inbox
         store = await self.catalog.check_item(item_id=order_request.item_id)
@@ -44,15 +51,15 @@ class OrderService:
         return result
 
     async def _check_idempotency(
-        self, order: CreateOrderRequest
+        self,
+        key: str,
+        payload: dict[str, Any],
     ) -> Order | None:
-        inbox = await self.uow.inbox_repo.get_by_idempotency_key(
-            order.idempotency_key
-        )
+        inbox = await self.uow.inbox_repo.get_by_idempotency_key(key)
         if inbox:
             await self.uow.inbox_repo.check_idempotency(
                 key=inbox.idempotency_key,
-                payload=order.model_dump(mode="json"),
+                payload=payload,
             )
             return Order(**inbox.result)
         return
@@ -85,3 +92,24 @@ class OrderService:
         except Exception as e:
             raise e
         return created_order
+
+    async def process_payment_callback(self, payment: PaymentResponse):
+        inbox = self._check_idempotency(
+            key=payment.idempotency_key,
+            payload=payment.model_dump(mode="json"),
+        )
+        if inbox:
+            return
+        if payment.status == PaymentStatus.SUCCEEDED:
+            db_status = OrderStatus.PAID
+        else:
+            db_status = OrderStatus.CANCELLED
+
+        with self.uow as u:
+            await u.order_repo.set_order_status(db_status)
+            dto = await u.inbox_repo.CreateDTO(
+                idempotency_key=payment.idempotency_key,
+                payload=payment.model_dump(),
+                result={"success": True},
+            )
+            u.inbox_repo.save(dto)
