@@ -9,6 +9,7 @@ from app.core.schemas import (
     CreatePaymentRequest,
 )
 from app.infrastructure.utils import build_url, retry_request
+from app.presentation.logs_config import api_logger
 
 
 class CapashinoClient:
@@ -53,7 +54,10 @@ class PaymentServiceImpl(CapashinoClient, PaymentService):
         url = build_url(base_url=self._base_url, path="/api/payments/")
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                url, data=body.model_dump(mode="json"), headers=self._headers
+                url, json=body.model_dump(mode="json"), headers=self._headers
+            )
+            api_logger(
+                "ответ от Payment Service с кодом %s", response.status_code
             )
             if response.is_success:
                 await retry_request(client, response.request)
