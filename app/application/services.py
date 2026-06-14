@@ -1,22 +1,46 @@
 from datetime import datetime
 
-from app.core.interfaces import CatalogService, UnitOfWork
-from app.core.schemas import CreateOrderRequest, Order, OutboxStatus
+from app.core.config import CALLBACK_URL
+from app.core.interfaces import CatalogService, PaymentService, UnitOfWork
+from app.core.schemas import (
+    CreateOrderRequest,
+    CreatePaymentRequest,
+    Order,
+    OutboxStatus,
+)
 
 
 class OrderService:
-    def __init__(self, uow: UnitOfWork, client: CatalogService):
+    def __init__(
+        self,
+        uow: UnitOfWork,
+        catalog: CatalogService,
+        payment_service: PaymentService,
+    ):
         self.uow = uow
-        self.client = client
+        self.catalog = catalog
+        self.payment_service = payment_service
+
+    async def get_order(self, order_id: str) -> Order:
+        async with self.uow as u:
+            order = await u.order_repo.get_by_id(order_id)
+            return order
 
     async def create_order(self, order_request: CreateOrderRequest) -> Order:
         inbox = await self._check_idempotency(order_request)
         if inbox:
             return inbox
-        store = await self.client.check_item(item_id=order_request.item_id)
+        store = await self.catalog.check_item(item_id=order_request.item_id)
         store.is_available(order_request.quantity)
-        result = await self._transactional_save(order_request)
 
+        result = await self._transactional_save(order_request)
+        payment_data = CreatePaymentRequest(
+            order_id=result.id,
+            amount=store.price,
+            callback_url=CALLBACK_URL,
+            idempotency_key=order_request.idempotency_key,
+        )
+        await self.payment_service.create_payment(payment_data)
         return result
 
     async def _check_idempotency(
