@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services import OrderService
 from app.core.interfaces import UnitOfWork
+from app.infrastructure.clients.сapashino_client import CatalogServiceImpl
 from app.infrastructure.db.db_config import AsyncSession as AsyncSessionFactory
 from app.infrastructure.db.repository import (
     InboxRepositoryImpl,
@@ -35,10 +36,13 @@ def get_uow(session: Annotated[AsyncSession, Depends(get_db)]) -> UnitOfWork:
     )
 
 
+catalog_client = CatalogServiceImpl()
+
+
 def get_order_service(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> OrderService:
-    return OrderService(uow=uow)
+    return OrderService(uow=uow, client=catalog_client)
 
 
 DepOrderService = Annotated[OrderService, Depends(get_order_service)]

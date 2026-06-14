@@ -5,7 +5,13 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from app.core.schemas import InboxEvent, Order, Outbox, OutboxStatus
+from app.core.schemas import (
+    CatalogResponse,
+    InboxEvent,
+    Order,
+    Outbox,
+    OutboxStatus,
+)
 
 
 class OrderRepository(ABC):
@@ -87,6 +93,12 @@ class UnitOfWorkBase(ABC):
 
     @abstractmethod
     async def close(self):
+        pass
+
+
+class CatalogService(ABC):
+    @abstractmethod
+    async def check_item(self, item_id: UUID) -> CatalogResponse:
         pass
 
 
