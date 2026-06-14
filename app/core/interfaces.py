@@ -10,6 +10,7 @@ from app.core.schemas import (
     CreatePaymentRequest,
     InboxEvent,
     Order,
+    OrderStatus,
     Outbox,
     OutboxStatus,
 )
@@ -27,6 +28,10 @@ class OrderRepository(ABC):
 
     @abstractmethod
     async def get_by_id(self, order_id: str) -> Order | None:
+        pass
+
+    @abstractmethod
+    async def set_order_status(self, status: OrderStatus, order_id: str):
         pass
 
 
