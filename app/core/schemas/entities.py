@@ -44,6 +44,7 @@ class OrderEvent(BaseModel):
             "order_id": str(self.order_id),
             "item_id": str(self.item_id),
             "quantity": self.quantity,
+            "idempotency_key": str(self.idempotency_key),
         }
 
     def to_outbox_dto(self) -> OutboxDTO:

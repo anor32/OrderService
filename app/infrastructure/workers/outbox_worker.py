@@ -1,6 +1,5 @@
 import asyncio
 import json
-import uuid
 
 from app.infrastructure.db.db_config import AsyncSession
 from app.infrastructure.db.repository import OutboxRepositoryImpl
@@ -41,7 +40,8 @@ class OutBoxWorker:
             ids = []
 
             for record in records:
-                idempotency_key = str(uuid.uuid4())
+                idempotency_key = record.payload.get("idempotency_key")
+
                 message = json.dumps(record.payload)
                 try:
                     result = await self._broker.send_to_kafka(
