@@ -41,17 +41,14 @@ class OutBoxWorker:
 
             for record in records:
                 api_logger.info("1 %s ", record)
-                idempotency_key = record.payload.get("idempotency_key")
-                api_logger.info("2.5 %s", idempotency_key)
+                idempotency_key = record.payload.get("id")
                 message = json.dumps(record.payload)
-                api_logger.info("2, %s", message)
                 try:
                     await self._broker.send_to_kafka(
                         topic="student_system-order.events",
                         value=message,
                         key=idempotency_key,
                     )
-                    api_logger.info("3")
                 except Exception as e:
                     api_logger.error("Ошибка отправки в кафку %s", e)
                     return
