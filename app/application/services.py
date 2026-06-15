@@ -1,16 +1,17 @@
-from datetime import datetime
 from typing import Any
 
 from app.core.config import CALLBACK_URL
-from app.core.interfaces import CatalogService, PaymentService, UnitOfWork
-from app.core.schemas import (
+from app.core.interfaces import (
+    CatalogService,
+    PaymentService,
+    ShippingService,
+    UnitOfWorkOrders,
+)
+from app.core.schemas.entities import (
     CreateOrderRequest,
     CreatePaymentRequest,
     Order,
-    OrderStatus,
-    OutboxStatus,
     PaymentResponse,
-    PaymentStatus,
 )
 from app.presentation.logs_config import api_logger
 
@@ -18,13 +19,15 @@ from app.presentation.logs_config import api_logger
 class OrderService:
     def __init__(
         self,
-        uow: UnitOfWork,
+        uow: UnitOfWorkOrders,
         catalog: CatalogService,
         payment_service: PaymentService,
+        shipping_service: ShippingService,
     ):
         self.uow = uow
         self.catalog = catalog
         self.payment_service = payment_service
+        self.shipping = shipping_service
 
     async def get_order(self, order_id: str) -> Order:
         async with self.uow as u:
@@ -32,12 +35,14 @@ class OrderService:
             return order
 
     async def create_order(self, order_request: CreateOrderRequest) -> Order:
+        api_logger.info("cоздание заказа началось")
         inbox = await self._check_idempotency(
             key=order_request.idempotency_key,
             payload=order_request.model_dump(mode="json"),
         )
         if inbox:
             return inbox
+        api_logger.info("проверка на складе")
         store = await self.catalog.check_item(item_id=order_request.item_id)
         store.is_available(order_request.quantity)
         api_logger.info("cохрание заказа  в базу")
@@ -70,26 +75,12 @@ class OrderService:
         self,
         order_request: CreateOrderRequest,
     ) -> Order:
-        dto = self.uow.order_repo.CreateDTO(
-            user_id=order_request.user_id,
-            item_id=order_request.item_id,
-            quantity=order_request.quantity,
-        )
-        outbox_dto = self.uow.outbox_repo.CreateDTO(
-            event_type="create_order",
-            payload=order_request.model_dump(mode="json"),
-            status=OutboxStatus.PENDING,
-            created_at=datetime.now(),
-        )
+        dto = order_request.to_order_dto()
+
         try:
             async with self.uow as u:
                 created_order = await u.order_repo.create(dto)
-                await u.outbox_repo.create_outbox(outbox_dto)
-                inbox_dto = u.inbox_repo.CreateDTO(
-                    idempotency_key=order_request.idempotency_key,
-                    payload=order_request.model_dump(mode="json"),
-                    result=created_order.model_dump(mode="json"),
-                )
+                inbox_dto = order_request.to_inbox_dto(created_order)
                 await u.inbox_repo.save(inbox_dto)
         except Exception as e:
             raise e
@@ -102,16 +93,18 @@ class OrderService:
         )
         if inbox:
             return
-        if payment.status == PaymentStatus.SUCCEEDED:
-            db_status = OrderStatus.PAID
-        else:
-            db_status = OrderStatus.CANCELLED
+        db_status = payment.check_status()
 
         with self.uow as u:
-            await u.order_repo.set_order_status(db_status)
+            order = await u.order_repo.get_by_id(payment.order_id)
+            await u.order_repo.set_order_status(db_status, payment.id)
             dto = await u.inbox_repo.CreateDTO(
                 idempotency_key=payment.idempotency_key,
                 payload=payment.model_dump(),
                 result={"success": True},
             )
+
+            ev = order.to_order_event(payment=payment)
+            outbox_dto = ev.to_outbox_dto()
+            await u.outbox_repo.create_outbox(outbox_dto)
             u.inbox_repo.save(dto)
