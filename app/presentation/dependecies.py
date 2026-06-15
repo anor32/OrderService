@@ -4,7 +4,6 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services import OrderService
-from app.core.interfaces import UnitOfWork
 from app.infrastructure.clients.сapashino_client import (
     CatalogServiceImpl,
     PaymentServiceImpl,
@@ -28,7 +27,9 @@ async def get_db():
         await db.close()
 
 
-def get_uow(session: Annotated[AsyncSession, Depends(get_db)]) -> UnitOfWork:
+def get_uow(
+    session: Annotated[AsyncSession, Depends(get_db)],
+) -> UnitOfWorkOrders:
     order_repo = OrderRepositoryImpl(session)
     outbox_repo = OutboxRepositoryImpl(session)
     inbox_repo = InboxRepositoryImpl(session)
@@ -48,7 +49,7 @@ shipping = ShippingServiceImpl(KafkaProducer())
 
 
 def get_order_service(
-    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    uow: Annotated[UnitOfWorkOrders, Depends(get_uow)],
 ) -> OrderService:
     return OrderService(
         uow=uow,

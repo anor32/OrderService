@@ -1,6 +1,10 @@
 from fastapi import APIRouter
 
-from app.core.schemas import CreateOrderRequest, OrderResponse, PaymentResponse
+from app.core.schemas.entities import (
+    CreateOrderRequest,
+    OrderResponse,
+    PaymentResponse,
+)
 from app.presentation.dependecies import DepOrderService
 
 router = APIRouter()
