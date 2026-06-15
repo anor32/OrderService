@@ -85,7 +85,7 @@ class OrderService:
         return created_order
 
     async def process_payment_callback(self, payment: PaymentResponse):
-        inbox = self._check_idempotency(
+        inbox = await self._check_idempotency(
             key=str(payment.payment_id),
             payload=payment.model_dump(mode="json"),
         )
