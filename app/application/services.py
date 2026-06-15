@@ -53,7 +53,7 @@ class OrderService:
             callback_url=CALLBACK_URL,
             idempotency_key=order_request.idempotency_key,
         )
-        api_logger.info("Отправка в payment service")
+        api_logger.info("Отправка в payment service %s", result.id)
         await self.payment_service.create_payment(payment_data)
         return result
 
@@ -87,6 +87,7 @@ class OrderService:
         return created_order
 
     async def process_payment_callback(self, payment: PaymentResponse):
+        api_logger.info("начата обработка заказа с id  %s", payment.order_id)
         inbox = await self._check_idempotency(
             key=str(payment.payment_id),
             payload=payment.model_dump(mode="json"),
