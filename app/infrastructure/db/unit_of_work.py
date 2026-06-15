@@ -6,6 +6,7 @@ from app.core.interfaces import (
     InboxRepository,
     OrderRepository,
     OutboxRepository,
+    UnitOfWorkConsumer,
     UnitOfWorkOrders,
     UnitOfWorkOutbox,
 )
@@ -49,6 +50,12 @@ class UnitOfWorkOrdersImpl(BaseImplUnitOfWork, UnitOfWorkOrders):
 
 
 class UnitOfWorkWorker(BaseImplUnitOfWork, UnitOfWorkOutbox):
-    def __init__(self, outbox_repo: OutboxRepository, session):
+    def __init__(self, outbox_repo: OutboxRepository, session: AsyncSession):
         self._session = session
         self.outbox_repo = outbox_repo
+
+
+class UnitOfWorkConsumerImpl(UnitOfWorkConsumer):
+    def __init__(self, order_repo: OrderRepository, session: AsyncSession):
+        self._session = session
+        self.order_repo = order_repo

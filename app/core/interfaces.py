@@ -106,6 +106,10 @@ class UnitOfWorkOutbox(UnitOfWorkBase):
     outbox_repo: OutboxRepository
 
 
+class UnitOfWorkConsumer(UnitOfWorkBase):
+    order_repo: OrderRepository
+
+
 class ShippingService(ABC):
     @abstractmethod
     async def sent_to_service(self, order: OrderEvent):
