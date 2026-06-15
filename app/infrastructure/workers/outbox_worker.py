@@ -38,10 +38,11 @@ class OutBoxWorker:
         async with unit_of_work as uow:
             records = await uow.outbox_repo.get_records()
             ids = []
-            api_logger.info("1 %s ", records)
-            for record in records:
-                idempotency_key = record.payload["idempotency_key"]
 
+            for record in records:
+                api_logger.info("1 %s ", record)
+                idempotency_key = record.payload.get("idempotency_key")
+                api_logger.info("2.5 %s", idempotency_key)
                 message = json.dumps(record.payload)
                 api_logger.info("2, %s", message)
                 try:
