@@ -3,6 +3,7 @@ import logging
 
 from fastapi import FastAPI
 
+from app.infrastructure.kafka.consumer import KafkaConsumer
 from app.infrastructure.kafka.producer import KafkaProducer
 from app.infrastructure.workers.outbox_worker import OutBoxWorker
 from app.presentation.midlewares import ErrorHandlingMiddleware
@@ -12,15 +13,16 @@ logger = logging.getLogger(__name__)
 
 
 async def lifespan(app: FastAPI):
-    logger.info("Запуск Outbox worker")
+    logger.info("Запуск Outbox worker и consumer")
     producer = KafkaProducer()
+    consumer = KafkaConsumer()
     worker = OutBoxWorker(broker=producer)
     logger.info("Outbox worker запущен")
-
+    consumer_task = asyncio.create_task(consumer.consume())
     worker_task = asyncio.create_task(worker.work(delay=10))
 
     yield
-
+    consumer_task.cancel()
     worker_task.cancel()
     await producer.stop()
     logger.info("Outbox worker остановлен")
