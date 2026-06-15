@@ -43,20 +43,18 @@ class OutBoxWorker:
             for record in records:
                 idempotency_key = str(uuid.uuid4())
                 message = json.dumps(record.payload)
-                if record.event_type == "create_order":
-                    api_logger.info("пропуск create_order")
-                    continue
                 try:
-                    await self._broker.send_to_kafka(
+                    result = await self._broker.send_to_kafka(
                         topic="student_system-order.events",
                         value=message,
                         key=idempotency_key,
                     )
+
                 except Exception as e:
                     api_logger.error("Ошибка отправки в кафку %s", e)
                     continue
                 else:
-                    api_logger.info("отправка в кафку успешна")
+                    api_logger.info("отправка в кафку успешна %s", result)
                 ids.append(str(record.id))
             if ids:
                 await uow.outbox_repo.set_sent_status(ids)

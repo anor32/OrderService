@@ -52,8 +52,8 @@ class KafkaConsumer:
             await self.consumer.stop()
 
     async def consume(self):
-        api_logger.info("consumer слушает")
         await self.init_consumer()
+        api_logger.info("consumer слушает")
         async for msg in self.consumer:
             event_data = msg.value
             event_type = event_data.get("event_type")
