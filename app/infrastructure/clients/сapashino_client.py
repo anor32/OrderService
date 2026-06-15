@@ -4,7 +4,7 @@ import httpx
 
 from app.core.config import CAPASHINO_HOST, EVENTS_API_KEY
 from app.core.interfaces import CatalogService, PaymentService
-from app.core.schemas import (
+from app.core.schemas.entities import (
     CatalogResponse,
     CreatePaymentRequest,
 )
