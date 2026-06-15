@@ -41,7 +41,7 @@ class OutBoxWorker:
             ids = []
 
             for record in records:
-                idempotency_key = uuid.uuid4()
+                idempotency_key = str(uuid.uuid4())
                 message = json.dumps(record.payload)
                 if record.event_type == "create_order":
                     api_logger.info("пропуск create_order")
