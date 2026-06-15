@@ -49,11 +49,9 @@ class OrderEvent(BaseModel):
     def to_outbox_dto(self) -> OutboxDTO:
         return OutboxDTO(
             event_type=self.event_type,
-            aggregate_id=self.order_id,
             payload=self.to_payload(),
             status=OutboxStatus.PENDING,
             created_at=datetime.now(),
-            idempotency_key=str(self.idempotency_key),
         )
 
 
@@ -71,7 +69,8 @@ class Order(BaseModel):
             event_type=payment.check_status(),
             order_id=self.id,
             quantity=self.quantity,
-            idempotency_key=payment.idempotency_key,
+            idempotency_key=payment.payment_id,
+            item_id=self.item_id,
         )
 
 

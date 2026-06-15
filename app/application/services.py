@@ -6,9 +6,11 @@ from app.core.interfaces import (
     PaymentService,
     UnitOfWorkOrders,
 )
+from app.core.schemas.dto import InboxDTO
 from app.core.schemas.entities import (
     CreateOrderRequest,
     CreatePaymentRequest,
+    InboxEvent,
     Order,
     PaymentResponse,
 )
@@ -39,7 +41,7 @@ class OrderService:
             payload=order_request.model_dump(mode="json"),
         )
         if inbox:
-            return inbox
+            return Order(**inbox.result)
         api_logger.info("проверка на складе")
         store = await self.catalog.check_item(item_id=order_request.item_id)
         store.is_available(order_request.quantity)
@@ -59,14 +61,14 @@ class OrderService:
         self,
         key: str,
         payload: dict[str, Any],
-    ) -> Order | None:
+    ) -> InboxEvent | None:
         inbox = await self.uow.inbox_repo.get_by_idempotency_key(key)
         if inbox:
             await self.uow.inbox_repo.check_idempotency(
                 key=inbox.idempotency_key,
                 payload=payload,
             )
-            return Order(**inbox.result)
+            return inbox
         return
 
     async def _transactional_save(
@@ -93,19 +95,22 @@ class OrderService:
             return
         db_status = payment.check_status()
 
-        with self.uow as u:
-            order = await u.order_repo.get_by_id(payment.order_id)
-            await u.order_repo.set_order_status(db_status, payment.id)
-            dto = await u.inbox_repo.CreateDTO(
-                idempotency_key=payment.idempotency_key,
-                payload=payment.model_dump(),
+        async with self.uow as u:
+            order = await u.order_repo.get_by_id(str(payment.order_id))
+            await u.order_repo.set_order_status(
+                db_status, str(payment.payment_id)
+            )
+            dto = InboxDTO(
+                idempotency_key=str(payment.payment_id),
+                payload=payment.model_dump(mode="json"),
                 result={"success": True},
             )
 
             ev = order.to_order_event(payment=payment)
             outbox_dto = ev.to_outbox_dto()
+
             await u.outbox_repo.create_outbox(outbox_dto)
-            u.inbox_repo.save(dto)
+            await u.inbox_repo.save(dto)
 
     async def process_shipping_callback(self, status: OrderStatus, order_id):
         async with self.uow as uow:

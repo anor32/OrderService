@@ -61,7 +61,7 @@ class OutBoxWorker:
         init = await self.init_worker()
         while not init:
             init = await self.init_worker()
-            await asyncio.sleep(delay)
+            await asyncio.sleep(delay * 60)
         while True:
             await self.process()
             api_logger.info("процессинг завершен")
