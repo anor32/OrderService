@@ -34,6 +34,7 @@ class OutBoxWorker:
     async def process(self):
         api_logger.info("процессинг начат")
         unit_of_work = await self._init_unitOfwork()
+        api_logger.info("unit_of_work_initialized")
         async with unit_of_work as uow:
             records = await uow.outbox_repo.get_records()
             ids = []
