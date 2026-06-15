@@ -4,7 +4,6 @@ from app.core.config import CALLBACK_URL
 from app.core.interfaces import (
     CatalogService,
     PaymentService,
-    ShippingService,
     UnitOfWorkOrders,
 )
 from app.core.schemas.entities import (
@@ -22,12 +21,10 @@ class OrderService:
         uow: UnitOfWorkOrders,
         catalog: CatalogService,
         payment_service: PaymentService,
-        shipping_service: ShippingService,
     ):
         self.uow = uow
         self.catalog = catalog
         self.payment_service = payment_service
-        self.shipping = shipping_service
 
     async def get_order(self, order_id: str) -> Order:
         async with self.uow as u:

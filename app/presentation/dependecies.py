@@ -7,7 +7,6 @@ from app.application.services import OrderService
 from app.infrastructure.clients.сapashino_client import (
     CatalogServiceImpl,
     PaymentServiceImpl,
-    ShippingServiceImpl,
 )
 from app.infrastructure.db.db_config import AsyncSession as AsyncSessionFactory
 from app.infrastructure.db.repository import (
@@ -15,7 +14,10 @@ from app.infrastructure.db.repository import (
     OrderRepositoryImpl,
     OutboxRepositoryImpl,
 )
-from app.infrastructure.db.unit_of_work import UnitOfWorkOrders
+from app.infrastructure.db.unit_of_work import (
+    UnitOfWorkOrders,
+    UnitOfWorkOrdersImpl,
+)
 from app.infrastructure.kafka.producer import KafkaProducer
 
 
@@ -34,7 +36,7 @@ def get_uow(
     outbox_repo = OutboxRepositoryImpl(session)
     inbox_repo = InboxRepositoryImpl(session)
 
-    return UnitOfWorkOrders(
+    return UnitOfWorkOrdersImpl(
         session=session,
         order_repo=order_repo,
         outbox_repo=outbox_repo,
@@ -45,7 +47,6 @@ def get_uow(
 catalog_client = CatalogServiceImpl()
 payment = PaymentServiceImpl()
 kafka = KafkaProducer()
-shipping = ShippingServiceImpl(KafkaProducer())
 
 
 def get_order_service(
@@ -55,7 +56,6 @@ def get_order_service(
         uow=uow,
         catalog=catalog_client,
         payment_service=payment,
-        shipping_service=shipping,
     )
 
 
