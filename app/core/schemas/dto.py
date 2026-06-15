@@ -26,7 +26,6 @@ class OrderCreateDTO(BaseModel):
     user_id: str
     item_id: UUID
     quantity: int
-    idempotency_key: str
 
 
 class OrderUpdateDTO(BaseModel):

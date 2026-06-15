@@ -88,7 +88,6 @@ class CreateOrderRequest(BaseModel):
             user_id=self.user_id,
             item_id=self.item_id,
             quantity=self.quantity,
-            idempotency_key=self.idempotency_key,
         )
 
     def to_inbox_dto(self, created_order: Order) -> InboxDTO:
