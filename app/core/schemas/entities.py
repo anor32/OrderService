@@ -56,7 +56,7 @@ class OrderEvent(BaseModel):
 
 
 class Order(BaseModel):
-    id: UUID = Field(default_factory=uuid.uuid4)
+    id: UUID
     user_id: str
     item_id: UUID
     quantity: int
