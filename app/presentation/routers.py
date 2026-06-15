@@ -32,5 +32,5 @@ async def get_order(order_id, service: DepOrderService) -> OrderResponse:
 
 
 @router.post("/api/orders/payment-callback", status_code=200)
-def callback_order(data: PaymentResponse, service: DepOrderService):
-    service.process_payment_callback(data)
+async def callback_order(data: PaymentResponse, service: DepOrderService):
+    await service.process_payment_callback(data)

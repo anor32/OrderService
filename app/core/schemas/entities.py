@@ -17,13 +17,11 @@ from app.core.schemas.statuses import (
 
 
 class PaymentResponse(BaseModel):
-    id: UUID
-    user_id: UUID
+    payment_id: UUID
     order_id: UUID
     amount: Decimal
-    status: str
-    idempotency_key: str
-    created_at: datetime
+    status: PaymentStatus
+    error_message: str | None
 
     def check_status(self) -> OrderStatus:
         if self.status == PaymentStatus.SUCCEEDED:

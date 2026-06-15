@@ -12,6 +12,7 @@ from app.core.schemas.entities import (
     Order,
     PaymentResponse,
 )
+from app.core.schemas.statuses import OrderStatus
 from app.presentation.logs_config import api_logger
 
 
@@ -85,7 +86,7 @@ class OrderService:
 
     async def process_payment_callback(self, payment: PaymentResponse):
         inbox = self._check_idempotency(
-            key=payment.idempotency_key,
+            key=str(payment.payment_id),
             payload=payment.model_dump(mode="json"),
         )
         if inbox:
@@ -105,3 +106,7 @@ class OrderService:
             outbox_dto = ev.to_outbox_dto()
             await u.outbox_repo.create_outbox(outbox_dto)
             u.inbox_repo.save(dto)
+
+    async def process_shipping_callback(self, status: OrderStatus, order_id):
+        async with self.uow as uow:
+            await uow.order_repo.set_order_status(status, order_id)
