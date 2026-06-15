@@ -17,12 +17,15 @@ class KafkaConsumer:
         self.consumer = None
         self.order_processor = None
 
-    async def init_worker(self):
-        async with AsyncSession() as session:
-            order_repo = OrderRepositoryImpl(session)
-            uow = UnitOfWorkConsumerImpl(order_repo, session)
-            self.order_processor = OrderProcessor(uow)
+    async def init_consumer(self):
+        api_logger.info("инициализация consumer")
+        self._session = AsyncSession()
+        order_repo = OrderRepositoryImpl(self._session)
+        uow = UnitOfWorkConsumerImpl(order_repo, self._session)
+        self.order_processor = OrderProcessor(uow)
+
         try:
+            await self.create_consumer()
             await self.consumer.start()
         except Exception as e:
             api_logger.error("Ошибка инциализации сonsumer %s", e)
@@ -50,6 +53,7 @@ class KafkaConsumer:
 
     async def consume(self):
         api_logger.info("consumer слушает")
+        await self.init_consumer()
         async for msg in self.consumer:
             event_data = msg.value
             event_type = event_data.get("event_type")

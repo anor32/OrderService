@@ -40,7 +40,6 @@ class OutBoxWorker:
             ids = []
 
             for record in records:
-                api_logger.info("1 %s ", record)
                 idempotency_key = record.payload.get("id")
                 message = json.dumps(record.payload)
                 try:
@@ -51,7 +50,7 @@ class OutBoxWorker:
                     )
                 except Exception as e:
                     api_logger.error("Ошибка отправки в кафку %s", e)
-                    return
+                    continue
                 else:
                     api_logger.info("отправка в кафку успешна")
                 ids.append(str(record.id))
