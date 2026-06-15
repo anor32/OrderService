@@ -1,29 +1,22 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import Any, Self
 from uuid import UUID
 
-from pydantic import BaseModel
-
-from app.core.schemas import (
+from app.core.schemas.dto import InboxDTO, OrderCreateDTO, OutboxDTO
+from app.core.schemas.entities import (
     CatalogResponse,
     CreatePaymentRequest,
     InboxEvent,
     Order,
-    OrderStatus,
+    OrderEvent,
     Outbox,
-    OutboxStatus,
 )
+from app.core.schemas.statuses import OrderStatus
 
 
 class OrderRepository(ABC):
-    class CreateDTO(BaseModel):
-        user_id: str
-        item_id: UUID
-        quantity: int
-
     @abstractmethod
-    async def create(self, order: CreateDTO) -> Order:
+    async def create(self, order: OrderCreateDTO) -> Order:
         pass
 
     @abstractmethod
@@ -36,14 +29,8 @@ class OrderRepository(ABC):
 
 
 class OutboxRepository(ABC):
-    class CreateDTO(BaseModel):
-        event_type: str
-        status: OutboxStatus
-        payload: dict
-        created_at: datetime
-
     @abstractmethod
-    async def create_outbox(self, outbox: CreateDTO) -> Outbox:
+    async def create_outbox(self, outbox: OutboxDTO) -> Outbox:
         pass
 
     @abstractmethod
@@ -56,11 +43,6 @@ class OutboxRepository(ABC):
 
 
 class InboxRepository(ABC):
-    class CreateDTO(BaseModel):
-        idempotency_key: str
-        payload: dict[str, Any]
-        result: dict[str, Any]
-
     @abstractmethod
     async def get_by_idempotency_key(self, key: str) -> InboxEvent | None:
         pass
@@ -70,7 +52,7 @@ class InboxRepository(ABC):
         pass
 
     @abstractmethod
-    async def save(self, dto: CreateDTO) -> None:
+    async def save(self, dto: InboxDTO) -> None:
         pass
 
     @abstractmethod
@@ -118,3 +100,9 @@ class UnitOfWork(UnitOfWorkBase):
     outbox_repo: OutboxRepository
     order_repo: OrderRepository
     inbox_repo: InboxRepository
+
+
+class ShippingService(ABC):
+    @abstractmethod
+    async def sent_to_service(self, order: OrderEvent):
+        pass

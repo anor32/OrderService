@@ -8,6 +8,7 @@ from app.core.interfaces import UnitOfWork
 from app.infrastructure.clients.сapashino_client import (
     CatalogServiceImpl,
     PaymentServiceImpl,
+    ShippingServiceImpl,
 )
 from app.infrastructure.db.db_config import AsyncSession as AsyncSessionFactory
 from app.infrastructure.db.repository import (
@@ -16,6 +17,7 @@ from app.infrastructure.db.repository import (
     OutboxRepositoryImpl,
 )
 from app.infrastructure.db.unit_of_work import UnitOfWorkOrders
+from app.infrastructure.kafka.producer import KafkaProducer
 
 
 async def get_db():
@@ -41,13 +43,18 @@ def get_uow(session: Annotated[AsyncSession, Depends(get_db)]) -> UnitOfWork:
 
 catalog_client = CatalogServiceImpl()
 payment = PaymentServiceImpl()
+kafka = KafkaProducer()
+shipping = ShippingServiceImpl(KafkaProducer())
 
 
 def get_order_service(
     uow: Annotated[UnitOfWork, Depends(get_uow)],
 ) -> OrderService:
     return OrderService(
-        uow=uow, catalog=catalog_client, payment_service=payment
+        uow=uow,
+        catalog=catalog_client,
+        payment_service=payment,
+        shipping_service=shipping,
     )
 
 
