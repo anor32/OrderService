@@ -99,7 +99,7 @@ class OrderService:
         async with self.uow as u:
             order = await u.order_repo.get_by_id(str(payment.order_id))
             await u.order_repo.set_order_status(
-                db_status, str(payment.payment_id)
+                db_status, str(payment.order_id)
             )
             dto = InboxDTO(
                 idempotency_key=str(payment.payment_id),
