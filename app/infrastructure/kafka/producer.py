@@ -1,5 +1,7 @@
 from aiokafka import AIOKafkaProducer
 
+from app.core.config import KAFKA_BOOTSTRAP_SERVERS
+
 
 class KafkaProducer:
     def __init__(self):
@@ -9,13 +11,17 @@ class KafkaProducer:
     def _init_producer(self):
         if not self._producer:
             self._producer = AIOKafkaProducer(
-                bootstrap_servers="localhost:9092",
+                bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
                 value_serializer=lambda x: x.encode("utf-8"),
                 key_serializer=lambda k: k.encode("utf-8"),
+                enable_idempotence=True,
             )
 
     async def _start(self):
         await self._producer.start()
+
+    async def stop(self):
+        await self._producer.stop()
 
     async def send_to_kafka(self, topic, value, key):
         if not self._started:
@@ -27,7 +33,3 @@ class KafkaProducer:
         await self._start()
         self._started = True
         return self
-
-
-# глобальные задачи на завтра применить инбокс патерн доделать outbox
-# полностью сделать метод создание в бизнес логике
