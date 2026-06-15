@@ -38,7 +38,7 @@ class OutboxRepository(ABC):
         pass
 
     @abstractmethod
-    async def set_sent_status(self, ids: list[UUID]) -> None:
+    async def set_sent_status(self, ids: list[str]) -> None:
         pass
 
 
@@ -96,10 +96,14 @@ class PaymentService(ABC):
         pass
 
 
-class UnitOfWork(UnitOfWorkBase):
+class UnitOfWorkOrders(UnitOfWorkBase):
     outbox_repo: OutboxRepository
     order_repo: OrderRepository
     inbox_repo: InboxRepository
+
+
+class UnitOfWorkOutbox(UnitOfWorkBase):
+    outbox_repo: OutboxRepository
 
 
 class ShippingService(ABC):
