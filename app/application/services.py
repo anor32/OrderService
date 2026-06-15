@@ -14,7 +14,6 @@ from app.core.schemas.entities import (
     Order,
     PaymentResponse,
 )
-from app.core.schemas.statuses import OrderStatus
 from app.presentation.logs_config import api_logger
 
 
@@ -112,7 +111,3 @@ class OrderService:
 
             await u.outbox_repo.create_outbox(outbox_dto)
             await u.inbox_repo.save(dto)
-
-    async def process_shipping_callback(self, status: OrderStatus, order_id):
-        async with self.uow as uow:
-            await uow.order_repo.set_order_status(status, order_id)
