@@ -10,19 +10,18 @@ from app.core.interfaces import (
     OrderRepository,
     OutboxRepository,
 )
-from app.core.schemas import (
+from app.core.schemas.dto import InboxDTO, OrderCreateDTO, OutboxDTO
+from app.core.schemas.entities import (
     InboxEvent,
-    InboxStatus,
     Order,
-    OrderStatus,
     Outbox,
 )
+from app.core.schemas.statuses import InboxStatus, OrderStatus, OutboxStatus
 from app.infrastructure.db.db_config import AsyncSession
 from app.infrastructure.db.models import (
     InboxModel,
     OrderModel,
     OutboxModel,
-    OutboxStatus,
 )
 
 
@@ -30,7 +29,7 @@ class OrderRepositoryImpl(OrderRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def create(self, data: OrderRepository.CreateDTO) -> Order:
+    async def create(self, data: OrderCreateDTO) -> Order:
         order = OrderModel(**data.model_dump())
         self._session.add(order)
         await self._session.flush()
@@ -74,27 +73,27 @@ class OutboxRepositoryImpl(OutboxRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def create_outbox(
-        self, outbox: OutboxRepository.CreateDTO
-    ) -> Outbox:
+    async def create_outbox(self, outbox: OutboxDTO) -> Outbox:
         out = OutboxModel(**outbox.model_dump())
         self._session.add(out)
         await self._session.flush()
         return await self._construct(out)
 
     async def get_records(self) -> list[Outbox]:
-        records = await (
-            self._session.scalars(OutboxModel)
+        stmt = (
+            select(OutboxModel)
             .where(OutboxModel.status == OutboxStatus.PENDING)
             .limit(100)
             .with_for_update(skip_locked=True)
-            .all()
         )
-        records = [await self._construct(record) for record in records]
+
+        records = await self._session.scalars(stmt)
+
+        records = [await self._construct(record) for record in records.all()]
 
         return records
 
-    async def set_sent_status(self, ids: list[UUID]):
+    async def set_sent_status(self, ids: list[str]):
         stmt = (
             update(OutboxModel)
             .where(OutboxModel.id.in_(ids))
@@ -104,6 +103,7 @@ class OutboxRepositoryImpl(OutboxRepository):
 
     async def _construct(self, model: OutboxModel) -> Outbox:
         outbox = Outbox(
+            id=model.id,
             status=model.status,
             event_type=model.event_type,
             payload=model.payload,
@@ -136,7 +136,7 @@ class InboxRepositoryImpl(InboxRepository):
         models = result.scalars().all()
         return [self._to_entity(model) for model in models]
 
-    async def save(self, dto: InboxRepository.CreateDTO) -> None:
+    async def save(self, dto: InboxDTO) -> None:
         existing = await self.get_by_idempotency_key(dto.idempotency_key)
 
         if existing:
