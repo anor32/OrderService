@@ -1,5 +1,6 @@
 import asyncio
 import json
+import uuid
 
 from app.infrastructure.db.db_config import AsyncSession
 from app.infrastructure.db.repository import OutboxRepositoryImpl
@@ -40,8 +41,11 @@ class OutBoxWorker:
             ids = []
 
             for record in records:
-                idempotency_key = record.payload.get("id")
+                idempotency_key = uuid.uuid4()
                 message = json.dumps(record.payload)
+                if record.event_type == "create_order":
+                    api_logger.info("пропуск create_order")
+                    continue
                 try:
                     await self._broker.send_to_kafka(
                         topic="student_system-order.events",
