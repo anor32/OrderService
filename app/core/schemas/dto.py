@@ -15,11 +15,9 @@ class InboxDTO(BaseModel):
 
 class OutboxDTO(BaseModel):
     event_type: str
-    aggregate_id: UUID
     payload: dict[str, Any]
     status: OutboxStatus
     created_at: datetime
-    idempotency_key: str | None = None
 
 
 class OrderCreateDTO(BaseModel):
