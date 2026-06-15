@@ -43,6 +43,7 @@ class OutBoxWorker:
                 idempotency_key = record.payload.get("idempotency_key")
 
                 message = json.dumps(record.payload)
+                api_logger.info(message)
                 try:
                     result = await self._broker.send_to_kafka(
                         topic="student_system-order.events",
