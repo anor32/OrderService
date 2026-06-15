@@ -1,25 +1,18 @@
 from typing import Self
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.interfaces import (
     InboxRepository,
     OrderRepository,
     OutboxRepository,
-    UnitOfWork,
+    UnitOfWorkOrders,
+    UnitOfWorkOutbox,
 )
 
 
-class UnitOfWorkOrders(UnitOfWork):
-    def __init__(
-        self,
-        session,
-        order_repo: OrderRepository,
-        outbox_repo: OutboxRepository,
-        inbox_repo: InboxRepository,
-    ):
-        self._session = session
-        self.order_repo = order_repo
-        self.outbox_repo = outbox_repo
-        self.inbox_repo = inbox_repo
+class BaseImplUnitOfWork:
+    _session: AsyncSession
 
     async def __aenter__(self) -> Self:
         return self
@@ -39,3 +32,23 @@ class UnitOfWorkOrders(UnitOfWork):
 
     async def rollback(self):
         await self._session.rollback()
+
+
+class UnitOfWorkOrdersImpl(BaseImplUnitOfWork, UnitOfWorkOrders):
+    def __init__(
+        self,
+        session,
+        order_repo: OrderRepository,
+        outbox_repo: OutboxRepository,
+        inbox_repo: InboxRepository,
+    ):
+        self._session = session
+        self.order_repo = order_repo
+        self.outbox_repo = outbox_repo
+        self.inbox_repo = inbox_repo
+
+
+class UnitOfWorkWorker(BaseImplUnitOfWork, UnitOfWorkOutbox):
+    def __init__(self, outbox_repo: OutboxRepository, session):
+        self._session = session
+        self.outbox_repo = outbox_repo
