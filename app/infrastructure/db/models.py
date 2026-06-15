@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import JSON, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.schemas import InboxStatus, OrderStatus, OutboxStatus
+from app.core.schemas.statuses import InboxStatus, OrderStatus, OutboxStatus
 from app.infrastructure.db.db_config import Base
 
 
