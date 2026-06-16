@@ -4,7 +4,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services import OrderService
-from app.infrastructure.clients.сapashino_client import (
+from app.infrastructure.clients.capashino_services import (
     CatalogServiceImpl,
     PaymentServiceImpl,
 )
