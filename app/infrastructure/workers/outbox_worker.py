@@ -32,9 +32,7 @@ class OutBoxWorker:
             return True
 
     async def process(self):
-        api_logger.info("процессинг начат")
         unit_of_work = await self._init_unitOfwork()
-        api_logger.info("unit_of_work_initialized")
         async with unit_of_work as uow:
             records = await uow.outbox_repo.get_records()
             ids = []
@@ -74,5 +72,5 @@ class OutBoxWorker:
             await asyncio.sleep(delay * 60)
         while True:
             await self.process()
-            api_logger.info("процессинг завершен")
+
             await asyncio.sleep(delay=delay)
