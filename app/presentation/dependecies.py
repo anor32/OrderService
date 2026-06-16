@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.services import OrderService
 from app.infrastructure.clients.capashino_services import (
     CatalogServiceImpl,
+    NotificationServiceImpl,
     PaymentServiceImpl,
 )
 from app.infrastructure.db.db_config import AsyncSession as AsyncSessionFactory
@@ -56,6 +57,7 @@ def get_order_service(
         uow=uow,
         catalog=catalog_client,
         payment_service=payment,
+        notify_service=NotificationServiceImpl(),
     )
 
 
