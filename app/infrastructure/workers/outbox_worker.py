@@ -55,9 +55,10 @@ class OutBoxWorker:
                     api_logger.error("Ошибка отправки в кафку %s", e)
                     continue
                 else:
+                    api_logger.info("e")
                     api_logger.info(
                         "отправка в кафку статус %s %s",
-                        result.topic,
+                        result,
                         type(result),
                     )
                 ids.append(str(record.id))
