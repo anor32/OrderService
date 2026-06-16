@@ -60,8 +60,8 @@ class OrderService:
         await self.payment_service.create_payment(payment_data)
         notify_body = NotificationBody(
             message=f"order has status {result.status}",
-            reference_id=result.id,
-            idempotency_key=order_request.idempotency_key,
+            reference_id=str(result.id),
+            idempotency_key=str(order_request.idempotency_key),
         )
         api_logger.info("отправка уведомления")
         await NotificationService().send_notification(notify_body)
