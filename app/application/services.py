@@ -108,6 +108,8 @@ class OrderService:
 
             ev = order.to_order_event(payment=payment)
             outbox_dto = ev.to_outbox_dto()
+            api_logger.info("создание бокса")
 
             await u.outbox_repo.create_outbox(outbox_dto)
             await u.inbox_repo.save(dto)
+            api_logger.info("бокс сохранен")
