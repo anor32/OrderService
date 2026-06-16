@@ -82,8 +82,8 @@ class KafkaConsumer:
                 api_logger.info("отправка уведомления косюмер")
                 notify_body = NotificationBody(
                     message=message,
-                    reference_id=order_id,
-                    idempotency_key=order_id,
+                    reference_id=str(order_id),
+                    idempotency_key=str(order_id),
                 )
                 await self.notify.send_notification(notify_body)
             except Exception as e:
