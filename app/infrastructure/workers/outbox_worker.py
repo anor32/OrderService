@@ -47,15 +47,19 @@ class OutBoxWorker:
                 try:
                     result = await self._broker.send_to_kafka(
                         topic="student_system-order.events",
-                        value=message,
-                        key=idempotency_key,
+                        value=str(message),
+                        key=str(idempotency_key),
                     )
 
                 except Exception as e:
                     api_logger.error("Ошибка отправки в кафку %s", e)
                     continue
                 else:
-                    api_logger.info("отправка в кафку успешна %s", result)
+                    api_logger.info(
+                        "отправка в кафку статус %s %s",
+                        result.topic,
+                        type(result),
+                    )
                 ids.append(str(record.id))
             if ids:
                 await uow.outbox_repo.set_sent_status(ids)
