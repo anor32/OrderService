@@ -7,6 +7,7 @@ from app.core.schemas.entities import (
     CatalogResponse,
     CreatePaymentRequest,
     InboxEvent,
+    NotificationBody,
     Order,
     OrderEvent,
     Outbox,
@@ -96,6 +97,18 @@ class PaymentService(ABC):
         pass
 
 
+class NotificationService(ABC):
+    @abstractmethod
+    async def send_notification(self, body: NotificationBody):
+        pass
+
+
+class ShippingService(ABC):
+    @abstractmethod
+    async def sent_to_service(self, order: OrderEvent):
+        pass
+
+
 class UnitOfWorkOrders(UnitOfWorkBase):
     outbox_repo: OutboxRepository
     order_repo: OrderRepository
@@ -108,9 +121,3 @@ class UnitOfWorkOutbox(UnitOfWorkBase):
 
 class UnitOfWorkConsumer(UnitOfWorkBase):
     order_repo: OrderRepository
-
-
-class ShippingService(ABC):
-    @abstractmethod
-    async def sent_to_service(self, order: OrderEvent):
-        pass

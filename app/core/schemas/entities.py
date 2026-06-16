@@ -150,3 +150,9 @@ class CreatePaymentRequest(BaseModel):
     amount: Decimal
     callback_url: str
     idempotency_key: str
+
+
+class NotificationBody(BaseModel):
+    message: str
+    reference_id: str
+    idempotency_key: str

@@ -3,10 +3,15 @@ from uuid import UUID
 import httpx
 
 from app.core.config import CAPASHINO_HOST, EVENTS_API_KEY
-from app.core.interfaces import CatalogService, PaymentService
+from app.core.interfaces import (
+    CatalogService,
+    NotificationService,
+    PaymentService,
+)
 from app.core.schemas.entities import (
     CatalogResponse,
     CreatePaymentRequest,
+    NotificationBody,
 )
 from app.infrastructure.utils import build_url, retry_request
 from app.presentation.logs_config import api_logger
@@ -21,8 +26,8 @@ class CapashinoClient:
     }
 
 
-class NotificationService(CapashinoClient):
-    async def send_notification(self, body) -> dict:
+class NotificationServiceImpl(CapashinoClient, NotificationService):
+    async def send_notification(self, body: NotificationBody) -> dict:
         url = build_url(self._base_url, "/api/notifications")
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=body, headers=self._headers)
