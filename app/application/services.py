@@ -64,7 +64,7 @@ class OrderService:
             idempotency_key=str(order_request.idempotency_key),
         )
         api_logger.info("отправка уведомления")
-        await NotificationService().send_notification(notify_body)
+        await self.notify_service.send_notification(notify_body)
         return result
 
     async def _check_idempotency(
