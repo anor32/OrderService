@@ -3,6 +3,7 @@ from typing import Any
 from app.core.config import CALLBACK_URL
 from app.core.interfaces import (
     CatalogService,
+    NotificationService,
     PaymentService,
     UnitOfWorkOrders,
 )
@@ -11,6 +12,7 @@ from app.core.schemas.entities import (
     CreateOrderRequest,
     CreatePaymentRequest,
     InboxEvent,
+    NotificationBody,
     Order,
     PaymentResponse,
 )
@@ -23,10 +25,12 @@ class OrderService:
         uow: UnitOfWorkOrders,
         catalog: CatalogService,
         payment_service: PaymentService,
+        notify_service: NotificationService,
     ):
         self.uow = uow
         self.catalog = catalog
         self.payment_service = payment_service
+        self.notify_service = notify_service
 
     async def get_order(self, order_id: str) -> Order:
         async with self.uow as u:
@@ -54,6 +58,13 @@ class OrderService:
         )
         api_logger.info("Отправка в payment service %s", result.id)
         await self.payment_service.create_payment(payment_data)
+        notify_body = NotificationBody(
+            message=f"order has status {result.status}",
+            reference_id=str(result.order_id),
+            idempotency_key=order_request.idempotency_key,
+        )
+        api_logger.info("отправка уведомления")
+        await NotificationService().send_notification(notify_body)
         return result
 
     async def _check_idempotency(
@@ -105,7 +116,14 @@ class OrderService:
                 payload=payment.model_dump(mode="json"),
                 result={"success": True},
             )
+            notify_body = NotificationBody(
+                message=f"order has status {db_status}",
+                reference_id=str(payment.order_id),
+                idempotency_key=dto.idempotency_key,
+            )
 
+            api_logger.info("отправка уведомления")
+            await self.notify_service.send_notification(notify_body)
             ev = order.to_order_event(payment=payment)
             outbox_dto = ev.to_outbox_dto()
             api_logger.info("создание бокса")

@@ -5,7 +5,11 @@ from aiokafka import AIOKafkaConsumer
 
 from app.application.processors import OrderProcessor
 from app.core.config import KAFKA_BOOTSTRAP_SERVERS
+from app.core.schemas.entities import NotificationBody
 from app.core.schemas.statuses import OrderStatus
+from app.infrastructure.clients.capashino_services import (
+    NotificationServiceImpl,
+)
 from app.infrastructure.db.db_config import AsyncSession
 from app.infrastructure.db.repository import OrderRepositoryImpl
 from app.infrastructure.db.unit_of_work import UnitOfWorkConsumerImpl
@@ -23,7 +27,7 @@ class KafkaConsumer:
         order_repo = OrderRepositoryImpl(self._session)
         uow = UnitOfWorkConsumerImpl(order_repo, self._session)
         self.order_processor = OrderProcessor(uow)
-
+        self.notify = NotificationServiceImpl()
         try:
             await self.create_consumer()
             await self.consumer.start()
@@ -62,16 +66,26 @@ class KafkaConsumer:
             if not order_id:
                 continue
             api_logger.info("получен order_id %s", order_id)
-            if event_type == "order.shipped":
+            if event_type == OrderStatus.SHIPPED:
                 status = OrderStatus.SHIPPED
-            elif event_type == "order.cancelled":
+                message = "Order is shipped"
+
+            elif event_type == OrderStatus.CANCELLED:
                 status = OrderStatus.CANCELLED
+                message = "order is cancelled"
             else:
                 continue
             try:
                 await self.order_processor.process_shipping_callback(
                     status, UUID(order_id)
                 )
+                api_logger.info("отправка уведомления косюмер")
+                notify_body = NotificationBody(
+                    message=message,
+                    reference_id=order_id,
+                    idempotency_key=order_id,
+                )
+                await self.notify.send_notification(notify_body)
             except Exception as e:
                 api_logger.error("сonsumer Error %s", e)
                 continue
