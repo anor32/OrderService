@@ -66,11 +66,11 @@ class KafkaConsumer:
             if not order_id:
                 continue
             api_logger.info("получен order_id %s", order_id)
-            if event_type == OrderStatus.SHIPPED:
+            if event_type == "order.shipped":
                 status = OrderStatus.SHIPPED
                 message = "Order is shipped"
 
-            elif event_type == OrderStatus.CANCELLED:
+            elif event_type == "order.cancelled":
                 status = OrderStatus.CANCELLED
                 message = "order is cancelled"
             else:

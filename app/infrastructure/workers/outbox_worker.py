@@ -40,8 +40,10 @@ class OutBoxWorker:
             ids = []
 
             for record in records:
-                idempotency_key = record.payload.get("idempotency_key")
-
+                data_to_send = record.payload
+                idempotency_key = data_to_send.get("idempotency_key")
+                event_type = data_to_send["event_type"]
+                data_to_send["event_type"] = "order." + event_type.lower()
                 message = json.dumps(record.payload)
                 api_logger.info(message)
                 try:
