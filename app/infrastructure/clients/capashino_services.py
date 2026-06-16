@@ -32,7 +32,9 @@ class NotificationServiceImpl(CapashinoClient, NotificationService):
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
-                    url, json=body, headers=self._headers
+                    url,
+                    json=body.model_dump(mode="json"),
+                    headers=self._headers,
                 )
             except httpx.ConnectTimeout as e:
                 api_logger.error("Превышено время ошидания %s", e)
