@@ -28,7 +28,9 @@ class KafkaProducer:
     async def send_to_kafka(self, topic, value, key) -> RecordMetadata:
         if not self._started:
             raise RuntimeError("Нет подходящего producer")
-        result = await self._producer.send(topic=topic, value=value, key=key)
+        result = await self._producer.send_and_wait(
+            topic=topic, value=value, key=key
+        )
         return result
 
     async def create_producer(self):
