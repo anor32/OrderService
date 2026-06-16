@@ -27,11 +27,19 @@ class CapashinoClient:
 
 
 class NotificationServiceImpl(CapashinoClient, NotificationService):
-    async def send_notification(self, body: NotificationBody) -> dict:
+    async def send_notification(self, body: NotificationBody) -> dict | None:
         url = build_url(self._base_url, "/api/notifications")
         async with httpx.AsyncClient() as client:
-            response = await client.post(url, json=body, headers=self._headers)
-
+            try:
+                response = await client.post(
+                    url, json=body, headers=self._headers
+                )
+            except httpx.ConnectTimeout as e:
+                api_logger.error("Превышено время ошидания %s", e)
+                return
+            except Exception as e:
+                api_logger.error("Ошибка отправки уведомления %s", e)
+                return
             if response.status_code > 399:
                 response = await retry_request(
                     client, response.request, max_retry=3, delay=1
