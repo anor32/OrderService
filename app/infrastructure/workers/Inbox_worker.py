@@ -42,6 +42,7 @@ class InboxWorker:
                 order_id = event_data.get("order_id")
                 if event_type == "order.shipped":
                     status = OrderStatus.SHIPPED
+                    api_logger.info("not skip")
                     message = "Order is shipped"
 
                 elif event_type == "order.cancelled":
@@ -49,6 +50,7 @@ class InboxWorker:
                     message = "order is cancelled"
                 else:
                     continue
+
                 notify_body = NotificationBody(
                     message=message,
                     reference_id=str(order_id),

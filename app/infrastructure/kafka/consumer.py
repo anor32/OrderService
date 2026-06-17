@@ -34,6 +34,7 @@ class KafkaConsumer:
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
             group_id="order_processors",
             value_deserializer=lambda m: json.loads(m.decode("utf-8")),
+            max_poll_records=50,
         )
         return self.consumer
 
