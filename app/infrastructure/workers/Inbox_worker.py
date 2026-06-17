@@ -33,10 +33,14 @@ class InboxWorker:
         uow = await self._init_uow()
         async with uow as u:
             pending = await u.inbox_repo.get_pending(limit)
+            api_logger.info("pending %s", pending)
             ids = []
             notifies = []
             for record in pending:
+                api_logger.info("recordd %s", record)
+
                 event_data = record.payload
+                api_logger.info("payload %s", event_data)
                 event_type = event_data.get("event_type")
                 order_id = event_data.get("order_id")
                 if event_type == "order.shipped":
@@ -58,6 +62,7 @@ class InboxWorker:
                     status, order_id
                 )
                 ids.append(record.idempotency_key)
+            api_logger.info("status")
             await u.inbox_repo.set_status(ids=ids)
         for notify_body in notifies:
             await self._ord_proc.sent_notify(notify_body)
