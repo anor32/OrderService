@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Any
-from uuid import UUID
 
 from sqlalchemy import Select, select, update
 
@@ -137,15 +136,9 @@ class InboxRepositoryImpl(InboxRepository):
         return [self._to_entity(model) for model in models]
 
     async def save(self, dto: InboxDTO) -> None:
-        existing = await self.get_by_idempotency_key(dto.idempotency_key)
-
-        if existing:
-            if existing.payload != dto.payload:
-                raise IdempotencyError(
-                    f"Payload mismatch for idempotency_key "
-                    f"{dto.idempotency_key}"
-                )
-            return
+        await self.check_idempotency(
+            key=dto.idempotency_key, payload=dto.payload
+        )
 
         model = InboxModel(
             idempotency_key=dto.idempotency_key,
@@ -157,7 +150,7 @@ class InboxRepositoryImpl(InboxRepository):
         await self._session.flush()
 
     async def check_idempotency(
-        self, key: UUID, payload: dict[str, Any]
+        self, key: str, payload: dict[str, Any]
     ) -> None:
         existing = await self.get_by_idempotency_key(key)
         if existing and existing.payload != payload:
