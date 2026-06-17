@@ -29,5 +29,4 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(ErrorHandlingMiddleware)
-# app.add_middleware(MetricsMiddleware)
 app.include_router(router)
