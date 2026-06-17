@@ -116,14 +116,9 @@ class OrderService:
                 payload=payment.model_dump(mode="json"),
                 result={"success": True},
             )
-            notify_body = NotificationBody(
-                message=f"order has status {db_status}",
-                reference_id=str(payment.order_id),
-                idempotency_key=dto.idempotency_key,
-            )
 
             api_logger.info("отправка уведомления")
-            await self.notify_service.send_notification(notify_body)
+
             ev = order.to_order_event(payment=payment)
             outbox_dto = ev.to_outbox_dto()
             api_logger.info("создание бокса")
@@ -131,3 +126,9 @@ class OrderService:
             await u.outbox_repo.create_outbox(outbox_dto)
             await u.inbox_repo.save(dto)
             api_logger.info("бокс сохранен")
+        notify_body = NotificationBody(
+            message=f"order has status {db_status}",
+            reference_id=str(payment.order_id),
+            idempotency_key=dto.idempotency_key,
+        )
+        await self.notify_service.send_notification(notify_body)
