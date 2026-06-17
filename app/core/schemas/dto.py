@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.core.schemas.statuses import OutboxStatus
 
@@ -29,4 +29,4 @@ class OrderCreateDTO(BaseModel):
 class OrderUpdateDTO(BaseModel):
     order_id: UUID
     status: str
-    updated_at: datetime = datetime.now()
+    updated_at: datetime = Field(default_factory=datetime.now)
