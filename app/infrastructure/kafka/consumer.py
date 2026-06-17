@@ -34,7 +34,6 @@ class KafkaConsumer:
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
             group_id="order_processors",
             value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-            max_poll_records=50,
         )
         return self.consumer
 
@@ -48,6 +47,10 @@ class KafkaConsumer:
     async def _handle_message(self, msg: ConsumerRecord):
         self.event_data = msg.value
         if not isinstance(self.event_data, dict):
+            return True
+
+        ev_type = self.event_data.get("event_type")
+        if ev_type not in ("order.shipped", "order.cancelled"):
             return True
         self.order_id = self.event_data.get("order_id")
         self.idempotency_key = str(self.order_id)
@@ -66,7 +69,7 @@ class KafkaConsumer:
                 inbox_dto = InboxDTO(
                     idempotency_key=self.idempotency_key,
                     payload=self.event_data,
-                    result={},
+                    result={"success": True},
                 )
                 api_logger.info("получен order_id %s", self.order_id)
                 api_logger.info(inbox_dto)
