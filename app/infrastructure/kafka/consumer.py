@@ -1,18 +1,19 @@
 import json
-from uuid import UUID
 
-from aiokafka import AIOKafkaConsumer
+from aiokafka import AIOKafkaConsumer, ConsumerRecord
 
 from app.application.processors import OrderProcessor
 from app.core.config import KAFKA_BOOTSTRAP_SERVERS
 from app.core.logs_config import api_logger
-from app.core.schemas.entities import NotificationBody
-from app.core.schemas.statuses import OrderStatus
+from app.core.schemas.dto import InboxDTO
 from app.infrastructure.clients.capashino_services import (
     NotificationServiceImpl,
 )
 from app.infrastructure.db.db_config import AsyncSession
-from app.infrastructure.db.repository import OrderRepositoryImpl
+from app.infrastructure.db.repository import (
+    InboxRepositoryImpl,
+    OrderRepositoryImpl,
+)
 from app.infrastructure.db.unit_of_work import UnitOfWorkConsumerImpl
 
 
@@ -24,8 +25,9 @@ class KafkaConsumer:
 
     async def init_services(self, session: AsyncSession):
         order_repo = OrderRepositoryImpl(session)
-        uow = UnitOfWorkConsumerImpl(order_repo, session)
-        self.order_processor = OrderProcessor(uow)
+        inbox_repo = InboxRepositoryImpl(session)
+        self.uow = UnitOfWorkConsumerImpl(order_repo, session, inbox_repo)
+        self.order_processor = OrderProcessor(self.uow)
         self.notify = NotificationServiceImpl()
 
     def create_consumer(self):
@@ -44,40 +46,46 @@ class KafkaConsumer:
         if self.consumer:
             await self.consumer.stop()
 
+    async def _handle_message(self, msg: ConsumerRecord):
+        self.event_data = msg.value
+        if not isinstance(self.event_data, dict):
+            return True
+        self.order_id = self.event_data.get("order_id")
+        self.idempotency_key = str(self.order_id)
+        if not self.order_id:
+            return True
+
+    async def _save_to_inbox(self):
+        async with AsyncSession() as session:
+            await self.init_services(session)
+            async with self.uow as u:
+                inbox = await u.inbox_repo.get_by_idempotency_key(
+                    self.idempotency_key
+                )
+                if inbox:
+                    return inbox
+                inbox_dto = InboxDTO(
+                    idempotency_key=self.idempotency_key,
+                    payload=self.event_data,
+                    result={},
+                )
+                api_logger.info("получен order_id %s", self.order_id)
+
+                await u.inbox_repo.save(inbox_dto)
+
     async def consume(self):
         await self.start()
         api_logger.info("consumer слушает")
+
         async for msg in self.consumer:
-            async with AsyncSession() as session:
-                await self.init_services(session)
-                event_data = msg.value
-                event_type = event_data.get("event_type")
-                order_id = event_data.get("order_id")
+            try:
+                error = await self._handle_message(msg)
+                if error:
+                    continue
+                await self._save_to_inbox()
 
-                if not order_id:
-                    continue
-                api_logger.info("получен order_id %s", order_id)
-                if event_type == "order.shipped":
-                    status = OrderStatus.SHIPPED
-                    message = "Order is shipped"
+            except Exception as e:
+                api_logger.error("сonsumer Error %s", e)
+                continue
 
-                elif event_type == "order.cancelled":
-                    status = OrderStatus.CANCELLED
-                    message = "order is cancelled"
-                else:
-                    continue
-                try:
-                    await self.order_processor.process_shipping_callback(
-                        status, UUID(order_id)
-                    )
-                    api_logger.info("отправка уведомления косюмер")
-                    notify_body = NotificationBody(
-                        message=message,
-                        reference_id=str(order_id),
-                        idempotency_key=str(order_id),
-                    )
-                    await self.notify.send_notification(notify_body)
-                except Exception as e:
-                    api_logger.error("сonsumer Error %s", e)
-                    continue
-                api_logger.info("сonsumer не слушает")
+    api_logger.info("сonsumer не слушает")
