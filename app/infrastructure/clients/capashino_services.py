@@ -46,7 +46,7 @@ class NotificationServiceImpl(CapashinoClient, NotificationService):
                 response = await retry_request(
                     client, response.request, max_retry=3, delay=1
                 )
-            if response.is_success:
+            if not response.is_success:
                 return response.json()
 
 
@@ -74,5 +74,5 @@ class PaymentServiceImpl(CapashinoClient, PaymentService):
             api_logger.info(
                 "ответ от Payment Service с кодом %s", response.status_code
             )
-            if response.is_success:
+            if not response.is_success:
                 await retry_request(client, response.request)
