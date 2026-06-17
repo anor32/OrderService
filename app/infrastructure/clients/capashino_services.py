@@ -8,13 +8,13 @@ from app.core.interfaces import (
     NotificationService,
     PaymentService,
 )
+from app.core.logs_config import api_logger
 from app.core.schemas.entities import (
     CatalogResponse,
     CreatePaymentRequest,
     NotificationBody,
 )
 from app.infrastructure.utils import build_url, retry_request
-from app.presentation.logs_config import api_logger
 
 
 class CapashinoClient:

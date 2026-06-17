@@ -5,6 +5,7 @@ from aiokafka import AIOKafkaConsumer
 
 from app.application.processors import OrderProcessor
 from app.core.config import KAFKA_BOOTSTRAP_SERVERS
+from app.core.logs_config import api_logger
 from app.core.schemas.entities import NotificationBody
 from app.core.schemas.statuses import OrderStatus
 from app.infrastructure.clients.capashino_services import (
@@ -13,7 +14,6 @@ from app.infrastructure.clients.capashino_services import (
 from app.infrastructure.db.db_config import AsyncSession
 from app.infrastructure.db.repository import OrderRepositoryImpl
 from app.infrastructure.db.unit_of_work import UnitOfWorkConsumerImpl
-from app.presentation.logs_config import api_logger
 
 
 class KafkaConsumer:

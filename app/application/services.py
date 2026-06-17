@@ -7,6 +7,7 @@ from app.core.interfaces import (
     PaymentService,
     UnitOfWorkOrders,
 )
+from app.core.logs_config import api_logger
 from app.core.schemas.dto import InboxDTO
 from app.core.schemas.entities import (
     CreateOrderRequest,
@@ -16,7 +17,6 @@ from app.core.schemas.entities import (
     Order,
     PaymentResponse,
 )
-from app.presentation.logs_config import api_logger
 
 
 class OrderService:
