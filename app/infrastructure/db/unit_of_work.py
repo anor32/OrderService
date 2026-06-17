@@ -55,7 +55,7 @@ class UnitOfWorkWorker(BaseImplUnitOfWork, UnitOfWorkOutbox):
         self.outbox_repo = outbox_repo
 
 
-class UnitOfWorkConsumerImpl(UnitOfWorkConsumer):
+class UnitOfWorkConsumerImpl(BaseImplUnitOfWork, UnitOfWorkConsumer):
     def __init__(self, order_repo: OrderRepository, session: AsyncSession):
         self._session = session
         self.order_repo = order_repo

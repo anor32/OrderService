@@ -29,7 +29,7 @@ class KafkaConsumer:
         self.order_processor = OrderProcessor(uow)
         self.notify = NotificationServiceImpl()
         try:
-            await self.consumer.start()
+            await self.start()
         except Exception as e:
             api_logger.error("Ошибка инциализации сonsumer %s", e)
             return False
