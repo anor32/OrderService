@@ -5,7 +5,7 @@ from app.core.schemas.entities import (
     OrderResponse,
     PaymentResponse,
 )
-from app.presentation.dependecies import DepOrderService
+from app.presentation.dependencies import DepOrderService
 
 router = APIRouter()
 

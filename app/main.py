@@ -6,7 +6,7 @@ from app.core.logs_config import api_logger
 from app.infrastructure.kafka.consumer import KafkaConsumer
 from app.infrastructure.kafka.producer import KafkaProducer
 from app.infrastructure.workers.outbox_worker import OutBoxWorker
-from app.presentation.midlewares import ErrorHandlingMiddleware
+from app.presentation.middlewares import ErrorHandlingMiddleware
 from app.presentation.routers import router
 
 
