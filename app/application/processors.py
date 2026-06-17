@@ -1,7 +1,7 @@
 from typing import Any
-from uuid import UUID
 
 from app.core.interfaces import NotificationService, UnitOfWorkConsumer
+from app.core.logs_config import api_logger
 from app.core.schemas.entities import NotificationBody
 from app.core.schemas.statuses import OrderStatus
 
@@ -22,8 +22,9 @@ class OrderProcessor:
             return inbox.result
 
     async def process_shipping_callback(
-        self, status: OrderStatus, order_id: UUID
+        self, status: OrderStatus, order_id: str
     ):
+        api_logger.info("обновление статуса")
         async with self.uow as uow:
             await uow.order_repo.set_order_status(status, str(order_id))
             await uow.commit()
