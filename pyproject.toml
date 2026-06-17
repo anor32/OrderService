@@ -1,7 +1,7 @@
 [project]
-name = "events-aggregator"
+name = "order-service"
 version = "0.1.0"
-description = "events aggretor service"
+description = "order service"
 requires-python = ">=3.12"
 dependencies = []
 
