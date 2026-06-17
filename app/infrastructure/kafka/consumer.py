@@ -69,7 +69,7 @@ class KafkaConsumer:
                     result={},
                 )
                 api_logger.info("получен order_id %s", self.order_id)
-
+                api_logger.info(inbox_dto)
                 await u.inbox_repo.save(inbox_dto)
 
     async def consume(self):

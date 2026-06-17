@@ -35,6 +35,7 @@ class InboxWorker:
             pending = await u.inbox_repo.get_pending(limit)
             ids = []
             notifies = []
+            api_logger.info("proc inbox worker")
             for record in pending:
                 event_data = record.payload
 
@@ -47,6 +48,7 @@ class InboxWorker:
 
                 elif event_type == "order.cancelled":
                     status = OrderStatus.CANCELLED
+                    api_logger.info("not skip")
                     message = "order is cancelled"
                 else:
                     continue
