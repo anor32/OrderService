@@ -17,6 +17,7 @@ from app.core.schemas.entities import (
     Order,
     PaymentResponse,
 )
+from app.core.schemas.statuses import InboxStatus
 
 
 class OrderService:
@@ -90,7 +91,9 @@ class OrderService:
         try:
             async with self.uow as u:
                 created_order = await u.order_repo.create(dto)
-                inbox_dto = order_request.to_inbox_dto(created_order)
+                inbox_dto = order_request.to_inbox_dto(
+                    created_order, InboxStatus.PROCESSED
+                )
                 await u.inbox_repo.save(inbox_dto)
         except Exception as e:
             raise e
@@ -115,6 +118,7 @@ class OrderService:
                 idempotency_key=str(payment.payment_id),
                 payload=payment.model_dump(mode="json"),
                 result={"success": True},
+                status=InboxStatus.PROCESSED,
             )
 
             api_logger.info("отправка уведомления")

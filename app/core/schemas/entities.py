@@ -88,11 +88,14 @@ class CreateOrderRequest(BaseModel):
             quantity=self.quantity,
         )
 
-    def to_inbox_dto(self, created_order: Order) -> InboxDTO:
+    def to_inbox_dto(
+        self, created_order: Order, status=InboxStatus.PENDING
+    ) -> InboxDTO:
         return InboxDTO(
             idempotency_key=self.idempotency_key,
             payload=self.model_dump(mode="json"),
             result=created_order.model_dump(mode="json"),
+            status=status,
         )
 
 
