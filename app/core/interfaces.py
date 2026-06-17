@@ -58,8 +58,12 @@ class InboxRepository(ABC):
 
     @abstractmethod
     async def check_idempotency(
-        self, key: UUID, payload: dict[str, Any]
+        self, key: str, payload: dict[str, Any]
     ) -> None:
+        pass
+
+    @abstractmethod
+    async def set_status(self, ids: list[str]) -> None:
         pass
 
 
@@ -121,3 +125,4 @@ class UnitOfWorkOutbox(UnitOfWorkBase):
 
 class UnitOfWorkConsumer(UnitOfWorkBase):
     order_repo: OrderRepository
+    inbox_repo: InboxRepository
