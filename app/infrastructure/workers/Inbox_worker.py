@@ -33,7 +33,6 @@ class InboxWorker:
         uow = await self._init_uow()
         async with uow as u:
             pending = await u.inbox_repo.get_pending(limit)
-            api_logger.info("pending %s", pending)
             ids = []
             notifies = []
             for record in pending:
@@ -58,7 +57,7 @@ class InboxWorker:
                 notifies.append(notify_body)
 
                 await self._ord_proc.process_shipping_callback(
-                    status, order_id
+                    status, str(order_id)
                 )
                 ids.append(record.idempotency_key)
 
