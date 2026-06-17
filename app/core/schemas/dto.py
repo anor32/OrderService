@@ -4,13 +4,14 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.core.schemas.statuses import OutboxStatus
+from app.core.schemas.statuses import InboxStatus, OutboxStatus
 
 
 class InboxDTO(BaseModel):
     idempotency_key: str
     payload: dict[str, Any]
     result: dict[str, Any]
+    status: InboxStatus = Field(default=InboxStatus.PENDING)
 
 
 class OutboxDTO(BaseModel):
