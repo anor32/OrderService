@@ -149,6 +149,14 @@ class InboxRepositoryImpl(InboxRepository):
         self._session.add(model)
         await self._session.flush()
 
+    async def set_status(self, ids: list[str]) -> None:
+        stmt = (
+            update(InboxModel)
+            .where(InboxModel.id.in_(ids))
+            .values(status=InboxStatus.PROCESSED)
+        )
+        await self._session.execute(stmt)
+
     async def check_idempotency(
         self, key: str, payload: dict[str, Any]
     ) -> None:
