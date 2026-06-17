@@ -37,10 +37,8 @@ class InboxWorker:
             ids = []
             notifies = []
             for record in pending:
-                api_logger.info("recordd %s", record)
-
                 event_data = record.payload
-                api_logger.info("payload %s", event_data)
+
                 event_type = event_data.get("event_type")
                 order_id = event_data.get("order_id")
                 if event_type == "order.shipped":
@@ -58,11 +56,12 @@ class InboxWorker:
                     idempotency_key=record.idempotency_key,
                 )
                 notifies.append(notify_body)
+
                 await self._ord_proc.process_shipping_callback(
                     status, order_id
                 )
                 ids.append(record.idempotency_key)
-            api_logger.info("status")
+
             await u.inbox_repo.set_status(ids=ids)
         for notify_body in notifies:
             await self._ord_proc.sent_notify(notify_body)
