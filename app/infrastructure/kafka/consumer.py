@@ -2,7 +2,6 @@ import json
 
 from aiokafka import AIOKafkaConsumer, ConsumerRecord
 
-from app.application.processors import OrderProcessor
 from app.core.config import KAFKA_BOOTSTRAP_SERVERS
 from app.core.logs_config import api_logger
 from app.core.schemas.dto import InboxDTO
@@ -27,7 +26,6 @@ class KafkaConsumer:
         order_repo = OrderRepositoryImpl(session)
         inbox_repo = InboxRepositoryImpl(session)
         self.uow = UnitOfWorkConsumerImpl(order_repo, session, inbox_repo)
-        self.order_processor = OrderProcessor(self.uow)
         self.notify = NotificationServiceImpl()
 
     def create_consumer(self):
