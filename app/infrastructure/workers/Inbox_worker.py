@@ -29,7 +29,7 @@ class InboxWorker:
         )
         return uow
 
-    async def process(self, limit: int = 100):
+    async def process(self, limit: int = 10):
         uow = await self._init_uow()
         async with uow as u:
             pending = await u.inbox_repo.get_pending(limit)
@@ -72,7 +72,7 @@ class InboxWorker:
 
     async def work(self, delay: int = 10, limit: int = 100):
         api_logger.info(
-            "InboxWorker запущен, проверка каждые %s секунд", delay
+            "InboxWorker запущен, проверка каждые %s секунд", delay * 60
         )
 
         while True:
@@ -83,4 +83,4 @@ class InboxWorker:
                     f"InboxWorker: критическая ошибка в цикле: {e}"
                 )
 
-            await asyncio.sleep(delay)
+            await asyncio.sleep(delay * 60)
