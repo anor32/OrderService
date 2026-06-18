@@ -46,6 +46,7 @@ class KafkaConsumer:
 
     async def _handle_message(self, msg: ConsumerRecord):
         self.event_data = msg.value
+        api_logger.info("hear")
         if not isinstance(self.event_data, dict):
             return True
 
@@ -59,6 +60,7 @@ class KafkaConsumer:
 
     async def _save_to_inbox(self):
         async with AsyncSession() as session:
+            api_logger.save("saving")
             await self.init_services(session)
             async with self.uow as u:
                 inbox = await u.inbox_repo.get_by_idempotency_key(
@@ -85,9 +87,10 @@ class KafkaConsumer:
             try:
                 error = await self._handle_message(msg)
                 if error:
+                    api_logger.error("errr")
                     continue
                 await self._save_to_inbox()
-
+                api_logger.info("saved to inbox")
             except Exception as e:
                 api_logger.error("сonsumer Error %s", e)
                 continue
