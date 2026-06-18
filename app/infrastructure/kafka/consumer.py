@@ -15,9 +15,8 @@ from app.infrastructure.db.unit_of_work import UnitOfWorkConsumerImpl
 
 class KafkaConsumer:
     def __init__(self):
-        api_logger.info("ee1e")
         self.consumer = self.create_consumer()
-        self.order_processor = None
+        self.uow = None
 
     async def init_services(self, session: AsyncSession):
         order_repo = OrderRepositoryImpl(session)
@@ -25,13 +24,15 @@ class KafkaConsumer:
         self.uow = UnitOfWorkConsumerImpl(order_repo, session, inbox_repo)
 
     def create_consumer(self):
-        self.consumer = AIOKafkaConsumer(
+        return AIOKafkaConsumer(
             "student_system-shipment.events",
             bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
             group_id="order_processors",
             value_deserializer=lambda m: json.loads(m.decode("utf-8")),
+            max_poll_records=50,
+            max_poll_interval_ms=600000,
+            session_timeout_ms=60000,
         )
-        return self.consumer
 
     async def start(self):
         await self.consumer.start()
@@ -41,37 +42,44 @@ class KafkaConsumer:
             await self.consumer.stop()
 
     async def _handle_message(self, msg: ConsumerRecord):
-        self.event_data = msg.value
+        event_data = msg.value
         api_logger.info("hear")
-        if not isinstance(self.event_data, dict):
-            return True
 
-        ev_type = self.event_data.get("event_type")
+        if not isinstance(event_data, dict):
+            return None, None, None
+
+        ev_type = event_data.get("event_type")
         if ev_type not in ("order.shipped", "order.cancelled"):
-            return True
-        self.order_id = self.event_data.get("order_id")
-        self.idempotency_key = str(self.order_id)
-        if not self.order_id:
-            return True
+            return None, None, None
 
-    async def _save_to_inbox(self):
+        order_id = event_data.get("order_id")
+        if not order_id:
+            return None, None, None
+
+        return event_data, order_id, str(order_id)
+
+    async def _save_to_inbox(
+        self, event_data: dict, order_id: str, idempotency_key: str
+    ):
         async with AsyncSession() as session:
             api_logger.info("saving")
             await self.init_services(session)
 
             async with self.uow as u:
                 inbox = await u.inbox_repo.get_by_idempotency_key(
-                    self.idempotency_key
+                    idempotency_key
                 )
                 api_logger.info("transact")
                 if inbox:
-                    return inbox
+                    api_logger.info("Дубликат %s, пропускаем", idempotency_key)
+                    return
+
                 inbox_dto = InboxDTO(
-                    idempotency_key=self.idempotency_key,
-                    payload=self.event_data,
+                    idempotency_key=idempotency_key,
+                    payload=event_data,
                     result={"success": True},
                 )
-                api_logger.info("получен order_id %s", self.order_id)
+                api_logger.info("получен order_id %s", order_id)
                 api_logger.info(inbox_dto)
                 await u.inbox_repo.save(inbox_dto)
                 await u.commit()
@@ -83,14 +91,23 @@ class KafkaConsumer:
 
         async for msg in self.consumer:
             try:
-                error = await self._handle_message(msg)
-                if error:
-                    api_logger.error("errr")
+                (
+                    event_data,
+                    order_id,
+                    idempotency_key,
+                ) = await self._handle_message(msg)
+                if not order_id:
+                    api_logger.error("errr: невалидное сообщение")
+                    await self.consumer.commit()
                     continue
-                await self._save_to_inbox()
-                api_logger.info("saved to inbox")
-            except Exception as e:
-                api_logger.error("сonsumer Error %s", e)
-                continue
 
-    api_logger.info("сonsumer не слушает")
+                await self._save_to_inbox(
+                    event_data, order_id, idempotency_key
+                )
+                await self.consumer.commit()
+                api_logger.info("saved to inbox and committed")
+
+            except Exception as e:
+                api_logger.error("сonsumer Error %s", e, exc_info=True)
+                await self.consumer.commit()
+                continue
