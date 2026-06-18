@@ -52,6 +52,8 @@ class InboxWorker:
                     api_logger.info("not skip")
                     message = "order is cancelled"
                 else:
+                    id = record.idempotency_key
+                    ids.append(id)
                     continue
 
                 notify_body = NotificationBody(
