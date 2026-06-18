@@ -5,9 +5,6 @@ from aiokafka import AIOKafkaConsumer, ConsumerRecord
 from app.core.config import KAFKA_BOOTSTRAP_SERVERS
 from app.core.logs_config import api_logger
 from app.core.schemas.dto import InboxDTO
-from app.infrastructure.clients.capashino_services import (
-    NotificationServiceImpl,
-)
 from app.infrastructure.db.db_config import AsyncSession
 from app.infrastructure.db.repository import (
     InboxRepositoryImpl,
@@ -26,7 +23,6 @@ class KafkaConsumer:
         order_repo = OrderRepositoryImpl(session)
         inbox_repo = InboxRepositoryImpl(session)
         self.uow = UnitOfWorkConsumerImpl(order_repo, session, inbox_repo)
-        self.notify = NotificationServiceImpl()
 
     def create_consumer(self):
         self.consumer = AIOKafkaConsumer(
@@ -60,12 +56,14 @@ class KafkaConsumer:
 
     async def _save_to_inbox(self):
         async with AsyncSession() as session:
-            api_logger.save("saving")
+            api_logger.info("saving")
             await self.init_services(session)
+
             async with self.uow as u:
                 inbox = await u.inbox_repo.get_by_idempotency_key(
                     self.idempotency_key
                 )
+                api_logger.info("transact")
                 if inbox:
                     return inbox
                 inbox_dto = InboxDTO(
