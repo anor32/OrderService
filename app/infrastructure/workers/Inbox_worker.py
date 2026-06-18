@@ -35,7 +35,7 @@ class InboxWorker:
             pending = await u.inbox_repo.get_pending(limit)
             ids = []
             notifies = []
-            api_logger.info("pending", pending)
+            api_logger.info("pending %s", pending)
             api_logger.info("proc inbox worker")
             for record in pending:
                 event_data = record.payload
