@@ -149,7 +149,7 @@ class InboxRepositoryImpl(InboxRepository):
         self._session.add(model)
         await self._session.flush()
 
-    async def set_status(self, ids: list[str]) -> None:
+    async def set_status_processed(self, ids: list[str]) -> None:
         stmt = (
             update(InboxModel)
             .where(InboxModel.idempotency_key.in_(ids))

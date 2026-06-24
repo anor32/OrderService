@@ -21,13 +21,11 @@ class OrderProcessor:
         if inbox:
             return inbox.result
 
-    async def process_shipping_callback(
+    async def process_messages_in_inbox(
         self, status: OrderStatus, order_id: str
     ):
         api_logger.info("обновление статуса")
-        async with self.uow as uow:
-            await uow.order_repo.set_order_status(status, str(order_id))
-            await uow.commit()
+        await self.uow.order_repo.set_order_status(status, str(order_id))
 
     async def sent_notify(self, notify_body: NotificationBody):
         await self.notify.send_notification(notify_body)

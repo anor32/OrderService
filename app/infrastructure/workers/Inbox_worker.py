@@ -62,12 +62,12 @@ class InboxWorker:
                 )
                 notifies.append(notify_body)
 
-                await self._ord_proc.process_shipping_callback(
+                await self._ord_proc.process_messages_in_inbox(
                     status, str(order_id)
                 )
                 ids.append(record.idempotency_key)
 
-            await u.inbox_repo.set_status(ids=ids)
+            await u.inbox_repo.set_status_processed(ids=ids)
         for notify_body in notifies:
             await self._ord_proc.sent_notify(notify_body)
 

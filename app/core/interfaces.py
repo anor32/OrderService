@@ -63,7 +63,7 @@ class InboxRepository(ABC):
         pass
 
     @abstractmethod
-    async def set_status(self, ids: list[str]) -> None:
+    async def set_status_processed(self, ids: list[str]) -> None:
         pass
 
 
