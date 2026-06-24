@@ -81,7 +81,7 @@ class InboxWorker:
                 await self.process(limit=limit)
             except Exception as e:
                 api_logger.error(
-                    f"InboxWorker: критическая ошибка в цикле: {e}"
+                    "InboxWorker: критическая ошибка в цикле: %s", e
                 )
 
             await asyncio.sleep(delay)
