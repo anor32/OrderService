@@ -7,8 +7,8 @@ from app.core.domain_exceptions import (
     NotEnoughStockError,
     ObjectNotFound,
 )
+from app.core.http_exceptions import ClientServerError, WrongRequest
 from app.core.logs_config import api_logger
-from app.presentation.http_exceptions import ClientServerError, WrongRequest
 
 
 class ErrorHandlingMiddleware(BaseHTTPMiddleware):
