@@ -17,6 +17,13 @@ class NotEnoughStockError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class BusinessLogic(Exception):
+    def __init__(
+        self, message: str = "Ошибка бизне логики"
+    ):
+        self.message = message
+        super().__init__(self.message)
+
 class ToManyRequests(Exception):
     def __init__(
             self, message: str = "превышен лимит запросов"
