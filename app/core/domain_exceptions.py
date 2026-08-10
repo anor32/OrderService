@@ -1,3 +1,6 @@
+from app.core.logs_config import api_logger
+
+
 class ObjectNotFound(Exception):
     def __init__(self, message: str = "Объект не найден"):
         self.message = message
@@ -22,6 +25,7 @@ class BusinessLogic(Exception):
     def __init__(
             self, message: str = "Ошибка бизне логики"
     ):
+        api_logger.info('work')
         self.message = message
         super().__init__(self.message)
 
