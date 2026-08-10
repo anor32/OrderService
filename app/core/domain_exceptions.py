@@ -1,3 +1,6 @@
+from app.core.logs_config import api_logger
+
+
 class ObjectNotFound(Exception):
     def __init__(self, message: str = "Объект не найден"):
         self.message = message
@@ -12,10 +15,19 @@ class IdempotencyError(Exception):
 
 class NotEnoughStockError(Exception):
     def __init__(
-        self, message: str = "количество товара на складе не достаточно"
+            self, message: str = "количество товара на складе не достаточно"
     ):
         self.message = message
         super().__init__(self.message)
+
+
+class BusinessLogic(Exception):
+    def __init__(
+            self, message: str = "Ошибка бизне логики"
+    ):
+        self.message = message
+        super().__init__(self.message)
+
 
 class ToManyRequests(Exception):
     def __init__(
